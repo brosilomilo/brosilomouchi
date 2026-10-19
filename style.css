@@ -481,6 +481,18 @@ section {
         border-bottom: none;
         color: var(--main-color);
     }
+
+    #cart-count {
+    position: relative;
+    top: -5px;
+    right: -10px;
+    background: var(--main-color);
+    color: white;
+    font-size: 1rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 50%;
+    font-weight: bold;
+}
 }
 
 /* RESPONSIVE DESIGN UNTUK LAYAR KECIL (HP 320px - 768px) */
