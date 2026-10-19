@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>brosilomouchi</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="icon" type="image/png" href="assets/pict/icon.png">
+</head>
+</head>
+
+<!-- CART MODAL / PANEL -->
+<div class="cart-modal" id="cart-modal">
+    <div class="cart-content">
+        <h2>Keranjang Mochi Lu</h2>
+        <div id="cart-items-container">
+            <!-- Item keranjang akan masuk lewat JS -->
+            <p>Keranjang masih kosong nih.</p>
+        </div>
+        <div class="cart-total">
+            <h3>Total: <span id="cart-total-price">Rp 0</span></h3>
+        </div>
+        <button class="btn" id="checkout-btn">Checkout</button>
+        <button class="btn" id="close-cart-btn" style="background: #555; margin-top: 5px;">Tutup</button>
+    </div>
+</div>
+
+<!-- MODAL PILIH PAKET -->
+<div class="cart-modal" id="package-modal">
+    <div class="cart-content">
+        <h2 id="selected-product-title">Pilih Paket Mochi</h2>
+        <div class="package-options" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1.2rem;">
+            
+            <label style="display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;">
+                <input type="radio" name="package-option" value="Basic" data-price="10000" checked style="transform: scale(1.2);">
+                <div style="text-align: left; margin-left: 1.5rem; flex: 1; color: #333;">
+                    <strong style="font-size: 1.6rem; display: block;">Paket Basic</strong>
+                    <span style="font-size: 1.3rem; color: #666;">Isi 3 Pcs</span>
+                </div>
+                <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">Rp 6.000</span>
+            </label>
+
+            <label style="display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;">
+                <input type="radio" name="package-option" value="Jumbo" data-price="25000" style="transform: scale(1.2);">
+                <div style="text-align: left; margin-left: 1.5rem; flex: 1; color: #333;">
+                    <strong style="font-size: 1.6rem; display: block;">Paket Jumbo</strong>
+                    <span style="font-size: 1.3rem; color: #666;">Isi 7 Pcs</span>
+                </div>
+                <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">Rp 13.000</span>
+            </label>
+
+            <label style="display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;">
+                <input type="radio" name="package-option" value="Family" data-price="45000" style="transform: scale(1.2);">
+                <div style="text-align: left; margin-left: 1.5rem; flex: 1; color: #333;">
+                    <strong style="font-size: 1.6rem; display: block;">Paket Family</strong>
+                    <span style="font-size: 1.3rem; color: #666;">Isi 10 Pcs</span>
+                </div>
+                <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">Rp 16.000</span>
+            </label>
+
+        </div>
+        <button class="btn" id="confirm-add-btn" style="width: 100%; margin-bottom: 5px;">Masukkan ke Keranjang</button>
+        <button class="btn" id="close-package-btn" style="background: #555; width: 100%;">Batal</button>
+    </div>
+</div>
+
+<body>
+    <!-- HEADER START -->
+    <header class="header">
+        <a href="#home" class="logo">
+            BROSiLO | <span class="namalu">MOUCHi</span>
+        </a>
+
+        <i class='bx bx-menu' id="menu-icon"></i>
+
+        <nav class="navbar">
+            <a href="#brmilo" class="active">Brosilo Mouchi</a>
+            <a href="#services">Menu</a>
+            <a href="https://wa.me/6283193887278" id="cart">Contact me !</a>
+            <a href="#" id="cart-icon"><i class='bx bx-cart-add'></i><span id="cart-count">0</span></a>
+        </nav>
+    </header>
+    <!-- HEADER END -->
+    <!-- HOME START -->
+    <section class="home" id="brmilo">
+        <div class="home-content">
+            <h3>Pre Order</h3>
+            <h1 id="status-toko">Now Open!!!</h1>
+            <h3 id="deskripsi-status">Kuy Pesan Mochinya</h3>
+            <p id="jelasin">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Yuk cobain mochinya <span class="bold">BROSiLO MOUCHi</span> ada banyak varian rasa, Kamu mau yang Basic, Jumbo Atau yang Family nih? Pesan Pre Order sekarang, dikirim besok setelah Pre Order. Tenang, Brosilo Mouchi terpercaya kok....</p>
+            <br>
+            <h3>Stok terbatas!!</h3>
+            <div class="social-icons">
+                <a href="https://wa.me/6283193887278"><i class='bx bxl-whatsapp'></i></a>
+                <a href="mailto:panjiaryab@gmail.com"><i class='bx bxs-envelope'></i></a>
+                <a href="https://www.instagram.com/themcallme.panji"><i class='bx bxl-instagram-alt'></i></a>
+            </div>
+            <a href="#services" class="btn">Liat menu</a>
+        </div>
+    </section>
+
+
+    <!-- HOME END -->
+
+    <section class="services" id="services">
+        <h1 class="heading">List Menu</h1>
+        <div class="services-container">
+            <div class="services-box services-box-ch">
+                <h3>Mochi Coklat</h3>
+                <a href="#" class="btn btn-choco">+Keranjang</a>
+            </div>
+
+            <div class="services-box services-box-st">
+                <h3>Mochi Strawberry</h3>
+                <a href="#" class="btn btn-strawberry">+Keranjang</a>
+            </div>
+
+
+            <div class="services-box services-box-mt" style="background-image: url(assets/pict/tangan.jpeg);">
+                <h3>Mochi Matcha</h3>
+                <a href="#" class="btn btn-matcha">+Keranjang</i></a>
+            </div>
+        </div>
+    </section>
+
+        <footer class="footer">
+        <div class="social">
+            <a href="https://wa.me/6283193887278"><i class='bx bxl-whatsapp'></i></a>
+            <a href="mailto:panjiaryab@gmail.com"><i class='bx bxs-envelope'></i></a>
+            <a href="https://www.instagram.com/themcallme.panji"><i class='bx bxl-instagram-alt'></i></a>
+        </div>
+        <ul class="list">
+            <li>
+                <a href="#">FAQ</a>
+            </li>
+            <li>
+                <a href="https://wa.me/6283193887278">Contact</a>
+            </li>
+            <li>
+                <a href="#">Privacy policy</a>
+            </li>
+        </ul>
+
+        <p class="copyright">
+            © Phanji Arya Baskhara | All Right Reserved
+        </p>
+
+    </footer>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
