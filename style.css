@@ -245,11 +245,11 @@ section {
 /* warna-tombol */
 
 .services .btn-choco {
-    background: #706142;
+    background: #62432a;
 }
 
 .services .btn-strawberry {
-    background: #ea7f98;
+    background: #fd3362;
 }
 
 .services .btn-matcha {
@@ -258,15 +258,15 @@ section {
 
 /* Warna Mochi */
 .services-container .services-box-ch {
-    background-color: #9a855d;
+    background-color: #6d4e34;
 }
 
 .services-container .services-box-st {
-    background-color: #f0a4b5;
+    background-color: #ff7794;
 }
 
 .services-container .services-box-mt {
-    background-color: #75c96e;
+    background-color: #57be4e;
 }
 
 /* Styling Badge Keranjang di Navbar */
@@ -506,6 +506,10 @@ section {
         margin-bottom: 4rem;
     }
 
+    .footer{
+        margin-top: 15rem;
+    }
+
     .footer ul li {
         display: block;
         /* Menu footer jadi kebawah (stack) biar rapi di HP */
@@ -546,5 +550,13 @@ section {
         height: 3.8rem;
         font-size: 2rem;
         margin: 1.5rem 1rem 1.5rem 0;
+    }
+
+    .services-container .services-box{
+        height: 230px;
+    }
+
+    .footer{
+        margin-top: 15rem;
     }
 }
