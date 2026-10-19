@@ -1,5 +1,5 @@
 
-///Navbar aktif & Scrool Bar
+///Navbar aktif dan Scrool Bar
 
 let menuIcon = document.querySelector('#menu-icon');
 let navbar = document.querySelector('.navbar');
@@ -39,11 +39,11 @@ function updateStatusToko() {
 
   if (jam >= 0 && jam < 23) {
     statusElement.innerText = "Now Open!!!";
-    isStoreOpen = true;
+    isStoreOpen = true; // Toko Buka
   } else {
     statusElement.innerText = "Now Close!";
     statusElement.style.color = "red";
-    isStoreOpen = false;
+    isStoreOpen = false; // Toko Tutup
   }
 }
 updateStatusToko();
@@ -55,7 +55,7 @@ function updateDeskripsiToko() {
   const sekarang = new Date();
   const jam = sekarang.getHours(); // Mengambil jam (0 - 23)
 
-  // Rentang jam Buka Normal 00.00 - 17.00
+  // Rentang jam 00.00 - 16.00
   // Catatan: jam < 16 mencakup dari jam 00:00 sampai 15:59.59
   if (jam >= 0 && jam < 23) {
     statusElement.innerText = "Kuy Pesan Mochinya";
@@ -81,7 +81,8 @@ const selectedProductTitle = document.getElementById('selected-product-title');
 const products = [
     { name: 'Mochi Coklat' },
     { name: 'Mochi Strawberry' },
-    { name: 'Mochi Matcha' }
+    { name: 'Mochi Matcha' },
+    { name: 'Mochi Mix | Campur' } // <-- Tambahan menu baru
 ];
 
 // Update badge angka di ikon keranjang navbar
@@ -230,6 +231,16 @@ if (closeCartBtn) {
 const checkoutBtn = document.getElementById('checkout-btn');
 if (checkoutBtn) {
     checkoutBtn.addEventListener('click', () => {
+        // Ambil nilai nama dari input
+        const buyerNameInput = document.getElementById('buyer-name');
+        const buyerName = buyerNameInput ? buyerNameInput.value.trim() : "";
+
+        // Validasi jika nama kosong
+        if (!buyerName) {
+            alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!');
+            if (buyerNameInput) buyerNameInput.focus();
+            return;
+        }
         // Cek apakah toko sedang tutup saat mau checkout
         if (!isStoreOpen) {
             alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!");
@@ -241,14 +252,20 @@ if (checkoutBtn) {
             return;
         }
 
+        // Ambil pilihan metode pengambilan (Diantar / Dijemput)
+        const deliveryMethodRadio = document.querySelector('input[name="delivery-method"]:checked');
+        const deliveryMethod = deliveryMethodRadio ? deliveryMethodRadio.value : "Diantar";
+
         let message = "Pesan Mochi!:\n\n";
+        message += `Nama Pemesan        : *${buyerName}*\n`;
+        message += `Metode Pengambilan  : *${deliveryMethod}*\n\n*Detail Pesanan:*\n`;
         let total = 0;
         cart.forEach(item => {
             let subtotal = item.price * item.qty;
             total += subtotal;
             message += `- ${item.name} (${item.qty}x) = Rp ${subtotal.toLocaleString('id-ID')}\n`;
         });
-        message += `\n*Total nya: Rp ${total.toLocaleString('id-ID')}*\n\nDitunggu ya cuy`;
+        message += `\n*Total nya: Rp ${total.toLocaleString('id-ID')}*\n\n`;
 
         let encodedMessage = encodeURIComponent(message);
         window.open(`https://wa.me/6283193887278?text=${encodedMessage}`, '_blank');
