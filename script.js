@@ -1,5 +1,5 @@
 
-///Navbar aktif dan Scrool Bar
+///Navbar aktif & Scrool Bar
 
 let menuIcon = document.querySelector('#menu-icon');
 let navbar = document.querySelector('.navbar');
