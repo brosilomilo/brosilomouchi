@@ -37,13 +37,13 @@ function updateStatusToko() {
   const sekarang = new Date();
   const jam = sekarang.getHours(); 
 
-  if (jam >= 0 && jam < 17) {
+  if (jam >= 0 && jam < 23) {
     statusElement.innerText = "Now Open!!!";
-    isStoreOpen = true; // Toko Buka
+    isStoreOpen = true;
   } else {
     statusElement.innerText = "Now Close!";
     statusElement.style.color = "red";
-    isStoreOpen = false; // Toko Tutup
+    isStoreOpen = false;
   }
 }
 updateStatusToko();
@@ -55,9 +55,9 @@ function updateDeskripsiToko() {
   const sekarang = new Date();
   const jam = sekarang.getHours(); // Mengambil jam (0 - 23)
 
-  // Rentang jam 00.00 - 16.00
+  // Rentang jam Buka Normal 00.00 - 17.00
   // Catatan: jam < 16 mencakup dari jam 00:00 sampai 15:59.59
-  if (jam >= 0 && jam < 17) {
+  if (jam >= 0 && jam < 23) {
     statusElement.innerText = "Kuy Pesan Mochinya";
 
   } else {
