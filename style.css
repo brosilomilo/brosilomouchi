@@ -319,7 +319,7 @@ section {
     bottom: 0;
     width: 100%;
     padding: 40px 0;
-    background-color: var(--main-color);
+    background-color: var(--add-color);
 }
 
 .footer .social {
@@ -454,7 +454,7 @@ section {
     }
 
     section {
-        padding: 11rem 5% 5rem;
+        padding: 2rem 5% 5rem;
     }
 
     .home-content h1 {
