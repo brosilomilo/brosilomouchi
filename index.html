@@ -22,6 +22,25 @@
         <div class="cart-total">
             <h3>Total: <span id="cart-total-price">Rp 0</span></h3>
         </div>
+        <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label for="buyer-name"
+                style="font-size: 1.4rem; font-weight: bold; display: block; margin-bottom: 0.5rem; color: var(--text-color);">Nama
+                Pemesan:</label>
+            <input type="text" id="buyer-name" placeholder="Masukkan nama kamu..."
+                style="width: 100%; padding: 1rem; font-size: 1.4rem; border: 2px solid #ddd; border-radius: 0.8rem; outline: none;">
+        </div>
+        <!-- TAMBAHAN PILIHAN METODE PENGAMBILAN -->
+        <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label style="font-size: 1.4rem; font-weight: bold; display: block; margin-bottom: 0.8rem; color: var(--text-color);">Metode Pengambilan:</label>
+            <div style="display: flex; gap: 1.5rem;">
+                <label style="font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="delivery-method" value="Diantar" checked style="transform: scale(1.2);"> Diantar
+                </label>
+                <label style="font-size: 1.4rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="delivery-method" value="Dijemput" style="transform: scale(1.2);"> Dijemput
+                </label>
+            </div>
+        </div>
         <button class="btn" id="checkout-btn">Checkout</button>
         <button class="btn" id="close-cart-btn" style="background: #555; margin-top: 5px;">Tutup</button>
     </div>
@@ -64,6 +83,16 @@
                     <span style="font-size: 1.3rem; color: #666;">Isi 10 Mochi</span>
                 </div>
                 <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">Rp 16.000</span>
+            </label>
+            <label
+                style="display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;">
+                <input type="radio" name="package-option" value="Combo" data-price="20000" checked
+                    style="transform: scale(1.2);">
+                <div style="text-align: left; margin-left: 1.5rem; flex: 1; color: #333;">
+                    <strong style="font-size: 1.6rem; display: block;">Paket Combo</strong>
+                    <span style="font-size: 1.3rem; color: #666;">Isi 10 Mochi + Choco Sauce Dip Glaze</span>
+                </div>
+                <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">Rp 20.000</span>
             </label>
 
         </div>
@@ -130,6 +159,11 @@
             <div class="services-box services-box-mt" style="background-image: url(assets/pict/tangan.jpeg);">
                 <h3>Mochi Matcha</h3>
                 <a href="#" class="btn btn-matcha">+Keranjang</i></a>
+            </div>
+            <!-- MENU TAMBAHAN: MOCHI MIX / CAMPUR -->
+            <div class="services-box services-box-mix">
+                <h3>Mochi Mix | Campur</h3>
+                <a href="#" class="btn btn-mix">+Keranjang</a>
             </div>
         </div>
     </section>
