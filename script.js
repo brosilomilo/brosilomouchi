@@ -37,7 +37,7 @@ function updateStatusToko() {
   const sekarang = new Date();
   const jam = sekarang.getHours(); 
 
-  if (jam >= 0 && jam < 20) {
+  if (jam >= 0 && jam < 17) {
     statusElement.innerText = "Now Open!!!";
     isStoreOpen = true; // Toko Buka
   } else {
@@ -57,7 +57,7 @@ function updateDeskripsiToko() {
 
   // Rentang jam 00.00 - 16.00
   // Catatan: jam < 16 mencakup dari jam 00:00 sampai 15:59.59
-  if (jam >= 0 && jam < 20) {
+  if (jam >= 0 && jam < 17) {
     statusElement.innerText = "Kuy Pesan Mochinya";
 
   } else {
