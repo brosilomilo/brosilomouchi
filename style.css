@@ -348,6 +348,8 @@ section {
 }
 
 .footer {
+    bottom: 0;
+    min-height: 45vh;
     margin-top: 15rem;
     position: relative;
     bottom: 0;
