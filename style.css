@@ -83,6 +83,11 @@ span {
 
 section {
     min-height: auto;
+    padding: 1rem 9% 1rem;
+}
+
+.home{
+    min-height: auto;
     padding: 10rem 9% 10rem;
 }
 
@@ -343,6 +348,7 @@ section {
 }
 
 .footer {
+    margin-top: 15rem;
     position: relative;
     bottom: 0;
     width: 100%;
