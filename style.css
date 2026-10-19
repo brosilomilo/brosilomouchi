@@ -319,7 +319,7 @@ section {
     bottom: 0;
     width: 100%;
     padding: 40px 0;
-    background-color: rgb(166, 138, 82);
+    background-color: var(--main-color);
 }
 
 .footer .social {
@@ -345,7 +345,7 @@ section {
 .footer .social a:hover {
     transform: scale(1.2)translateY(-10px);
     background-color: white;
-    color: rgb(166, 138, 82);
+    color: var(--main-color);
 }
 
 .footer ul {
