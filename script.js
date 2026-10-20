@@ -28,44 +28,67 @@ menuIcon.onclick = () => {
 }
 
 ///Status Toko Update OPEN or CLOSE
+///Status Toko & Deskripsi Update Realtime dari Firebase
+///admin
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// Variabel global status toko (true = buka, false = tutup)
+// Konfigurasi Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDTf3da_pvH0cWCcp3LZlAKo8Byj60BzNU",
+    authDomain: "brosilomouchi.firebaseapp.com",
+    databaseURL: "https://brosilomouchi-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "brosilomouchi",
+    storageBucket: "brosilomouchi.firebasestorage.app",
+    messagingSenderId: "553620321746",
+    appId: "1:553620321746:web:aec6a279a7e6b2b6f7840b",
+    measurementId: "G-FQ6MFKF6BT"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Variabel global status toko
 let isStoreOpen = true;
 
-function updateStatusToko() {
-  const statusElement = document.getElementById('status-toko');
-  const sekarang = new Date();
-  const jam = sekarang.getHours(); 
+// Ambil referensi ke path 'storeStatus/isOpen'
+const statusRef = ref(db, 'storeStatus/isOpen');
 
-  if (jam >= 0 && jam < 23) {
-    statusElement.innerText = "Now Open!!!";
-    isStoreOpen = true; // Toko Buka
-  } else {
-    statusElement.innerText = "Now Close!";
-    statusElement.style.color = "red";
-    isStoreOpen = false; // Toko Tutup
-  }
-}
-updateStatusToko();
+// Pantau perubahan secara real-time dari Firebase
+onValue(statusRef, (snapshot) => {
+    const data = snapshot.val();
+    
+    // Konversi nilai ke boolean
+    const isOpen = (data === true || data === "true");
+    
+    const statusElement = document.getElementById('status-toko');
+    const deskripsiElement = document.getElementById('deskripsi-status');
+    
+    isStoreOpen = isOpen; // Update status global
 
-///Deskripsinya
-
-function updateDeskripsiToko() {
-  const statusElement = document.getElementById('deskripsi-status');
-  const sekarang = new Date();
-  const jam = sekarang.getHours(); // Mengambil jam (0 - 23)
-
-  // Rentang jam 00.00 - 16.00
-  // Catatan: jam < 16 mencakup dari jam 00:00 sampai 15:59.59
-  if (jam >= 0 && jam < 23) {
-    statusElement.innerText = "Kuy Pesan Mochinya";
-
-  } else {
-    statusElement.innerText = "Lagi masak mochi!!";
-  }
-}
-
-updateDeskripsiToko();
+    if (isOpen) {
+        // Tampilan Saat TOKO BUKA
+        if (statusElement) {
+            statusElement.innerText = "Now Open!!!";
+            statusElement.style.color = ""; // Mengikuti warna default CSS
+        }
+        if (deskripsiElement) {
+            deskripsiElement.innerText = "Kuy Pesan Mochinya";
+        }
+    } else {
+        // Tampilan Saat TOKO TUTUP
+        if (statusElement) {
+            statusElement.innerText = "Now Close!";
+            statusElement.style.color = "red";
+        }
+        if (deskripsiElement) {
+            deskripsiElement.innerText = "Lagi masak mochi!!"; // Atau ubah ke teks tutup sesuai keinginanmu
+        }
+    }
+}, (error) => {
+    console.error("Gagal mengambil data dari Firebase:", error);
+});
+///admnend
 
 /// SISTEM KERANJANG BELANJA & PILIHAN PAKET
 
@@ -257,7 +280,7 @@ if (checkoutBtn) {
         const deliveryMethod = deliveryMethodRadio ? deliveryMethodRadio.value : "Diantar";
 
         let message = "Pesan Mochi!:\n\n";
-        message += `Nama Pemesan        : *${buyerName}*\n`;
+        message += `Nama Pemesan            : *${buyerName}*\n`;
         message += `Metode Pengambilan  : *${deliveryMethod}*\n\n*Detail Pesanan:*\n`;
         let total = 0;
         cart.forEach(item => {
