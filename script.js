@@ -131,7 +131,7 @@ document.querySelectorAll('.services .btn').forEach((btn, index) => {
         
         // Cek apakah toko sedang tutup
         if (!isStoreOpen) {
-            alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!");
+            alert("Yah maaf nih lagi tutup, tunggu buka ya!!");
             return;
         }
 
@@ -266,7 +266,7 @@ if (checkoutBtn) {
         }
         // Cek apakah toko sedang tutup saat mau checkout
         if (!isStoreOpen) {
-            alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!");
+            alert("Yah maaf nih lagi tutup, tunggu buka ya!!");
             return;
         }
 
