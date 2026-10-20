@@ -230,7 +230,7 @@ section {
     color: white;
     border: 1px solid transparent;
     letter-spacing: 0.1rem;
-    font-weight: 70;
+    font-weight: 600;
     transition: 0.3 ease;
     cursor: pointer;
 }
