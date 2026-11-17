@@ -31,7 +31,8 @@ menuIcon.onclick = () => {
 ///Status Toko & Deskripsi Update Realtime dari Firebase
 ///admin
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Konfigurasi Firebase
 const firebaseConfig = {
@@ -47,6 +48,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 // Variabel global status toko
 let isStoreOpen = true;
@@ -131,7 +133,7 @@ document.querySelectorAll('.services .btn').forEach((btn, index) => {
         
         // Cek apakah toko sedang tutup
         if (!isStoreOpen) {
-            alert("Yah maaf nih lagi tutup, tunggu buka ya!!");
+            alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!");
             return;
         }
 
@@ -250,48 +252,239 @@ if (closeCartBtn) {
     });
 }
 
-// Fitur Checkout langsung kirim pesanan via WhatsApp
-const checkoutBtn = document.getElementById('checkout-btn');
-if (checkoutBtn) {
-    checkoutBtn.addEventListener('click', () => {
-        // Ambil nilai nama dari input
-        const buyerNameInput = document.getElementById('buyer-name');
-        const buyerName = buyerNameInput ? buyerNameInput.value.trim() : "";
+/// ===== LOGIN GOOGLE + CHECKOUT + PEMBAYARAN + PESANAN SAYA =====
 
-        // Validasi jika nama kosong
-        if (!buyerName) {
-            alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!');
-            if (buyerNameInput) buyerNameInput.focus();
-            return;
-        }
-        // Cek apakah toko sedang tutup saat mau checkout
-        if (!isStoreOpen) {
-            alert("Yah maaf nih lagi tutup, tunggu buka ya!!");
-            return;
-        }
+// ISI DATA PEMBAYARAN KAMU DI SINI
+const PAYMENT = {
+    qris:  { label: 'QRIS (semua e-wallet & m-banking)', image: 'assets/pict/qris.png' },
+    dana:  { label: 'DANA', number: '08xxxxxxxxxx', holder: 'Nama Pemilik' },
+    gopay: { label: 'GoPay', number: '08xxxxxxxxxx', holder: 'Nama Pemilik' },
+    bri:   { label: 'Transfer Bank BRI', number: 'xxxxxxxxxxxxxxx', holder: 'Nama Pemilik' }
+};
 
-        if (cart.length === 0) {
-            alert('Keranjang kamu masih kosong!');
-            return;
-        }
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
+const CANCELABLE = ['Menunggu Pembayaran', 'Verifikasi Pembayaran', 'Menunggu'];
 
-        // Ambil pilihan metode pengambilan (Diantar / Dijemput)
-        const deliveryMethodRadio = document.querySelector('input[name="delivery-method"]:checked');
-        const deliveryMethod = deliveryMethodRadio ? deliveryMethodRadio.value : "Diantar";
+function getSteps(method) {
+    const s = ['Menunggu Pembayaran', 'Verifikasi Pembayaran', 'Menunggu', 'Diproses', 'Menunggu Kirim'];
+    return method === 'Dijemput' ? [...s, 'Selesai'] : [...s, 'Sedang Dikirim', 'Selesai'];
+}
+function statusText(status, method) {
+    const pickup = method === 'Dijemput';
+    return ({
+        'Menunggu Pembayaran': 'Menunggu pembayaran',
+        'Verifikasi Pembayaran': 'Pembayaran sedang diverifikasi admin',
+        'Menunggu': 'Pembayaran valid, menunggu diproses',
+        'Diproses': 'Pesanan sedang diproses',
+        'Menunggu Kirim': pickup ? 'Pesanan siap, silakan diambil' : 'Pesanan siap, menunggu dikirim',
+        'Sedang Dikirim': 'Pesanan sedang dikirim',
+        'Selesai': 'Pesanan Selesai',
+        'Dibatalkan': 'Pesanan dibatalkan',
+        'Ditolak': 'Pesanan ditolak'
+    })[status] || status;
+}
 
-        let message = "Pesan Mochi!:\n\n";
-        message += `Nama Pemesan            : *${buyerName}*\n`;
-        message += `Metode Pengambilan  : *${deliveryMethod}*\n\n*Detail Pesanan:*\n`;
-        let total = 0;
-        cart.forEach(item => {
-            let subtotal = item.price * item.qty;
-            total += subtotal;
-            message += `- ${item.name} (${item.qty}x) = Rp ${subtotal.toLocaleString('id-ID')}\n`;
+// ---------- LOGIN GOOGLE ----------
+const provider = new GoogleAuthProvider();
+let user = null;
+const login = () => signInWithPopup(auth, provider).catch(e => {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') alert('Login gagal: ' + e.message);
+});
+
+// ---------- MODAL "PESANAN SAYA" ----------
+const orderModal = document.createElement('div');
+orderModal.className = 'cart-modal';
+orderModal.id = 'order-modal';
+orderModal.innerHTML = `
+    <div class="cart-content">
+        <h2>Pesanan Saya</h2>
+        <div id="track-history" style="text-align:left; font-size:1.3rem;"></div>
+        <div id="track-result" style="text-align:left; font-size:1.4rem; margin-top:1.5rem;"></div>
+        <button class="btn" id="close-order-btn" style="background:#555; width:100%; margin-top:1.5rem;">Tutup</button>
+    </div>`;
+document.body.appendChild(orderModal);
+
+const orderLink = document.createElement('a');
+orderLink.href = '#'; orderLink.id = 'order-link'; orderLink.innerText = 'Pesanan Saya';
+const authLink = document.createElement('a');
+authLink.href = '#'; authLink.id = 'auth-link'; authLink.innerText = 'Log In';
+const navEl = document.querySelector('header nav');
+if (navEl && cartIcon) { navEl.insertBefore(orderLink, cartIcon); navEl.insertBefore(authLink, cartIcon); }
+
+authLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!user) login();
+    else if (confirm('Log Out' + user.email + '?')) signOut(auth);
+});
+
+// ---------- DATA PESANAN (hanya milik user yang login) ----------
+let myOrders = {}, selected = null, unsubOrders = null;
+
+onAuthStateChanged(auth, (u) => {
+    user = u;
+    authLink.innerText = u ? 'Keluar (' + (u.displayName || 'Akun').split(' ')[0] + ')' : 'Login';
+    const nameInput = $('buyer-name');
+    if (u && nameInput && !nameInput.value) nameInput.value = u.displayName || '';
+    if (unsubOrders) { unsubOrders(); unsubOrders = null; }
+    myOrders = {}; selected = null;
+    if (u) {
+        unsubOrders = onValue(query(ref(db, 'orders'), orderByChild('uid'), equalTo(u.uid)), (snap) => {
+            myOrders = snap.val() || {};
+            render();
+        }, (err) => { console.error(err); $('track-history').innerHTML = '<p style="color:#d70032;">Gagal memuat pesanan.</p>'; });
+    }
+    render();
+});
+
+const act = (no, data) => update(ref(db, 'orders/' + no), { ...data, updatedAt: Date.now() })
+    .catch(e => alert('Gagal: ' + e.message));
+
+function render() {
+    const box = $('track-history'), res = $('track-result');
+    if (!user) {
+        box.innerHTML = '<p>Login dulu untuk melihat pesananmu.</p><button class="btn" id="login-btn" style="margin-top:1rem;">Login dengan Google</button>';
+        res.innerHTML = '';
+        $('login-btn').onclick = login;
+        return;
+    }
+    const list = Object.values(myOrders).sort((a, b) => b.createdAt - a.createdAt);
+    if (!list.length) { box.innerHTML = '<p style="color:#888;">Belum ada pesanan.</p>'; res.innerHTML = ''; return; }
+    if (!myOrders[selected]) selected = list[0].orderNo;
+
+    box.innerHTML = '<strong>Daftar Pesanan Saya:</strong>' + list.map(o => `
+        <div class="hist-row" data-no="${esc(o.orderNo)}" style="display:flex; justify-content:space-between; gap:1rem; padding:0.9rem 1.1rem; margin-top:0.7rem; border:2px solid ${o.orderNo === selected ? '#d70032' : '#ddd'}; border-radius:0.8rem; cursor:pointer;">
+            <strong>${esc(o.orderNo)}</strong>
+            <span style="color:${o.status === 'Selesai' ? '#26971b' : (o.status === 'Dibatalkan' || o.status === 'Ditolak') ? '#d70032' : '#b36b00'}; font-weight:bold; text-align:right;">${esc(statusText(o.status, o.method))}</span>
+        </div>`).join('');
+    box.querySelectorAll('.hist-row').forEach(r => r.onclick = () => { selected = r.dataset.no; render(); });
+    renderDetail(myOrders[selected]);
+}
+
+function renderDetail(o) {
+    const res = $('track-result');
+    const final = o.status === 'Dibatalkan' || o.status === 'Ditolak';
+    const done = o.status === 'Selesai';
+    const steps = getSteps(o.method), idx = steps.indexOf(o.status);
+    const items = Object.values(o.items || {}).map(i => `<li>${esc(i.name)} (${esc(i.qty)}x)</li>`).join('');
+    const bg = final ? '#ffebee' : done ? '#e8f5e9' : '#fff8e1';
+    const fg = final ? '#d70032' : done ? '#26971b' : '#b36b00';
+
+    res.innerHTML = `
+        <p><strong>No. Pesanan: ${esc(o.orderNo)}</strong></p>
+        <p>Nama: ${esc(o.name)} | ${esc(o.method)}</p>
+        <ul style="margin:0.8rem 0 0.8rem 2rem;">${items}</ul>
+        <p>Total: <strong>${rp(o.total)}</strong></p>
+        <div style="margin:1.2rem 0; padding:1.2rem; border-radius:1rem; text-align:center; font-size:1.6rem; font-weight:bold; background:${bg}; color:${fg};">
+            ${done ? '✅ ' : ''}${esc(statusText(o.status, o.method))}
+            ${o.rejectReason ? `<br><small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
+        </div>
+        ${final ? '' : `<div style="font-size:1.3rem;">${steps.map((s, i) => `<div style="padding:0.2rem 0; color:${i <= idx ? '#26971b' : '#aaa'};">${i <= idx ? '●' : '○'} ${esc(s === 'Menunggu' ? 'Pembayaran Valid' : s === 'Menunggu Kirim' && o.method === 'Dijemput' ? 'Siap Diambil' : s)}</div>`).join('')}</div>`}
+        <div id="pay-box"></div>
+        <div id="cancel-box"></div>`;
+
+    if (o.status === 'Menunggu Pembayaran') renderPayment(o);
+
+    if (CANCELABLE.includes(o.status)) {
+        $('cancel-box').innerHTML = `<button class="btn" id="cancel-btn" style="background:#555; width:100%; margin-top:1rem;">Batalkan Pesanan</button>
+            ${o.status !== 'Menunggu Pembayaran' ? '<p style="font-size:1.2rem; color:#888; margin-top:0.5rem;">Kalau sudah bayar, hubungi admin untuk pengembalian dana.</p>' : ''}`;
+        $('cancel-btn').onclick = () => { if (confirm('Yakin batalkan pesanan ' + o.orderNo + '?')) act(o.orderNo, { status: 'Dibatalkan', cancelledAt: Date.now() }); };
+    }
+}
+
+function renderPayment(o) {
+    const box = $('pay-box');
+    const lbl = 'display:flex; align-items:center; gap:0.8rem; padding:0.8rem 1rem; margin-top:0.6rem; border:2px solid #ddd; border-radius:0.8rem; cursor:pointer;';
+    box.innerHTML = `
+        <div style="margin-top:1.5rem; padding-top:1.2rem; border-top:2px dashed #ddd;">
+            <strong>Pilih Metode Pembayaran:</strong>
+            ${o.paymentNote ? `<p style="color:#d70032; margin-top:0.6rem;">${esc(o.paymentNote)}</p>` : ''}
+            ${Object.entries(PAYMENT).map(([k, p], i) => `<label style="${lbl}"><input type="radio" name="pay-method" value="${k}" ${i ? '' : 'checked'}> ${esc(p.label)}</label>`).join('')}
+            <div id="pay-info" style="margin:1rem 0;"></div>
+            <input type="text" id="payer-name" placeholder="Nama pengirim / akun pembayar" style="width:100%; padding:1rem; font-size:1.4rem; border:2px solid #ddd; border-radius:0.8rem;">
+            <button class="btn" id="paid-btn" style="width:100%; margin-top:1rem;">Saya Sudah Bayar</button>
+        </div>`;
+
+    const key = () => document.querySelector('input[name="pay-method"]:checked').value;
+    const showInfo = () => {
+        const p = PAYMENT[key()];
+        $('pay-info').innerHTML = p.image
+            ? `<img src="${p.image}" alt="QRIS" style="width:100%; max-width:240px; display:block; margin:0 auto;" onerror="this.outerHTML='<p style=&quot;color:#d70032;&quot;>QR belum tersedia.</p>'">
+               <p style="text-align:center; margin-top:0.6rem;">Scan lalu bayar tepat <strong>${rp(o.total)}</strong></p>`
+            : `<p>${esc(p.label)}: <strong>${esc(p.number)}</strong> a.n. ${esc(p.holder)}
+               <button class="btn" id="copy-btn" style="padding:0.3rem 1rem; font-size:1.2rem; margin:0 0 0 0.5rem;">Salin</button></p>
+               <p>Transfer tepat <strong>${rp(o.total)}</strong></p>`;
+        const c = $('copy-btn');
+        if (c) c.onclick = () => navigator.clipboard.writeText(p.number).then(() => c.innerText = 'Tersalin');
+    };
+    box.querySelectorAll('input[name="pay-method"]').forEach(r => r.addEventListener('change', showInfo));
+    showInfo();
+
+    $('paid-btn').onclick = () => {
+        const payer = $('payer-name').value.trim();
+        if (!payer) return alert('Isi nama pengirim dulu ya, biar admin gampang cek.');
+        act(o.orderNo, {
+            status: 'Verifikasi Pembayaran',
+            payment: { method: PAYMENT[key()].label, payer: payer.slice(0, 60), at: Date.now() },
+            paymentNote: null
         });
-        message += `\n*Total nya: Rp ${total.toLocaleString('id-ID')}*\n\n`;
+    };
+}
 
-        let encodedMessage = encodeURIComponent(message);
-        window.open(`https://wa.me/6283193887278?text=${encodedMessage}`, '_blank');
+function openOrderModal(no) {
+    if (no) selected = no;
+    orderModal.classList.add('active');
+    render();
+}
+orderLink.addEventListener('click', (e) => { e.preventDefault(); openOrderModal(); });
+$('close-order-btn').addEventListener('click', () => orderModal.classList.remove('active'));
+
+// ---------- CHECKOUT ----------
+const checkoutBtn = $('checkout-btn');
+if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', async () => {
+        if (!user) { alert('Login dulu pakai akun Google ya sebelum checkout.'); login(); return; }
+        const buyerNameInput = $('buyer-name');
+        const buyerName = buyerNameInput ? buyerNameInput.value.trim() : '';
+        if (!buyerName) { alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!'); if (buyerNameInput) buyerNameInput.focus(); return; }
+        if (!isStoreOpen) { alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!"); return; }
+        if (cart.length === 0) { alert('Keranjang kamu masih kosong!'); return; }
+
+        const radio = document.querySelector('input[name="delivery-method"]:checked');
+        const method = radio ? radio.value : 'Diantar';
+        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+        checkoutBtn.disabled = true;
+        checkoutBtn.innerText = 'Mengirim...';
+        try {
+            let orderNo = null;
+            for (let i = 0; i < 5 && !orderNo; i++) {
+                const no = 'BM-' + Math.floor(1000 + Math.random() * 9000);
+                try {
+                    await set(ref(db, 'orders/' + no), {
+                        orderNo: no, uid: user.uid, email: user.email,
+                        name: buyerName.slice(0, 60), method,
+                        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+                        total, status: 'Menunggu Pembayaran',
+                        createdAt: Date.now(), updatedAt: Date.now()
+                    });
+                    orderNo = no;
+                } catch (e) { console.warn('Coba lagi:', e.code); }
+            }
+            if (!orderNo) throw new Error('gagal membuat pesanan');
+
+            cart = []; saveCart();
+            cartModal.classList.remove('active');
+            openOrderModal(orderNo);
+            alert('Pesanan dibuat! Selesaikan pembayaran supaya pesananmu diproses.');
+        } catch (err) {
+            console.error(err);
+            alert('Gagal mengirim pesanan. Pastikan toko sedang buka, lalu coba lagi ya.');
+        } finally {
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerText = 'Checkout';
+        }
     });
 }
 
