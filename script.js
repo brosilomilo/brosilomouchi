@@ -256,9 +256,9 @@ if (closeCartBtn) {
 
 // ISI DATA PEMBAYARAN KAMU DI SINI
 const PAYMENT = {
-    qris:  { label: 'QRIS (semua e-wallet & m-banking)', image: 'assets/pict/qris.png' },
-    dana:  { label: 'DANA', number: '08xxxxxxxxxx', holder: 'Nama Pemilik' },
-    gopay: { label: 'GoPay', number: '08xxxxxxxxxx', holder: 'Nama Pemilik' },
+    qris:  { label: 'QRIS', image: 'assets/pict/qris.png' },
+    dana:  { label: 'DANA', number: '083193887278', holder: 'Phanji Arya Baskhara' },
+    gopay: { label: 'GoPay', number: '083193887278', holder: 'Phanji Arya Baskhara' },
     bri:   { label: 'Transfer Bank BRI', number: 'xxxxxxxxxxxxxxx', holder: 'Nama Pemilik' }
 };
 
@@ -324,7 +324,7 @@ let myOrders = {}, selected = null, unsubOrders = null;
 
 onAuthStateChanged(auth, (u) => {
     user = u;
-    authLink.innerText = u ? 'Keluar (' + (u.displayName || 'Akun').split(' ')[0] + ')' : 'Login';
+    authLink.innerText = u ? 'Keluar' : 'Login';
     const nameInput = $('buyer-name');
     if (u && nameInput && !nameInput.value) nameInput.value = u.displayName || '';
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
@@ -448,7 +448,7 @@ if (checkoutBtn) {
         const buyerNameInput = $('buyer-name');
         const buyerName = buyerNameInput ? buyerNameInput.value.trim() : '';
         if (!buyerName) { alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!'); if (buyerNameInput) buyerNameInput.focus(); return; }
-        if (!isStoreOpen) { alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!"); return; }
+        if (!isStoreOpen) { alert("Yah maaf nih lagi tutup, Transaksi lagi limit!!"); return; }
         if (cart.length === 0) { alert('Keranjang kamu masih kosong!'); return; }
 
         const radio = document.querySelector('input[name="delivery-method"]:checked');
