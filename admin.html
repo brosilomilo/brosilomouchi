@@ -17,6 +17,7 @@
         .btn-open { background: #26971b; }
         .btn-close { background: #d70032; }
         .btn-del { background: #999; }
+        .btn-print { background: #0288d1; }
         .btn:active { transform: scale(0.98); }
         .row { display: flex; gap: 10px; }
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
@@ -38,9 +39,34 @@
         .order .btn { margin: 10px 0 0; padding: 11px; font-size: 15px; }
         .empty { color: #888; padding: 20px; }
         .hidden { display: none !important; }
+
+        /* AREA KHUSUS CETAK STRUK */
+        #print-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: monospace; color: black; background: white; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- AREA STRUK YANG AKAN DICETAK -->
+    <div id="print-area">
+        <h2 style="text-align:center; font-size: 20px; margin-bottom: 5px;">BROSiLO MOUCHi</h2>
+        <p style="text-align:center; font-size: 12px; margin-bottom: 15px;">Struk Bukti Pesanan</p>
+        <hr style="border: dashed 1px #000; margin-bottom: 10px;">
+        <p><strong>No. Pesanan :</strong> <span id="p-no"></span></p>
+        <p><strong>Tanggal     :</strong> <span id="p-time"></span></p>
+        <p><strong>Nama Pemesan:</strong> <span id="p-name"></span></p>
+        <p><strong>Metode      :</strong> <span id="p-method"></span></p>
+        <hr style="border: dashed 1px #000; margin: 10px 0;">
+        <p><strong>Daftar Item:</strong></p>
+        <ul id="p-items" style="list-style: none; padding-left: 0; margin-bottom: 10px;"></ul>
+        <hr style="border: dashed 1px #000; margin: 10px 0;">
+        <p style="font-size: 16px;"><strong>Total: <span id="p-total"></span></strong></p>
+        <p style="font-size: 12px; text-align: center; margin-top: 20px;">=== TERIMA KASIH ===</p>
+    </div>
 
     <!-- LOGIN ADMIN -->
     <div class="admin-card" id="login-section">
@@ -197,11 +223,33 @@
                     <div><strong>Total: ${rp(o.total)}</strong> <small>• ${esc(time)}</small></div>
                     ${pay}
                     ${o.rejectReason ? `<small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
+                    <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">Cetak Struk Pesanan</button>
                     ${btns}
                     ${FINAL.includes(o.status) ? `<button class="btn btn-del" data-no="${esc(o.orderNo)}" data-i="del">Hapus</button>` : ''}
                 </div>`;
             }).join('');
         }
+
+        // FUNGSI EKSEKUSI CETAK STRUK
+        document.addEventListener('click', (e) => {
+            const printBtn = e.target.closest('button[data-print]');
+            if (printBtn) {
+                const orderNo = printBtn.dataset.print;
+                const o = orders.find(x => x.orderNo === orderNo);
+                if (!o) return;
+
+                $('p-no').innerText = o.orderNo;
+                $('p-time').innerText = new Date(o.createdAt).toLocaleString('id-ID');
+                $('p-name').innerText = o.name;
+                $('p-method').innerText = o.method;
+                $('p-total').innerText = rp(o.total);
+                
+                const itemsList = Object.values(o.items || {}).map(i => `<li>- ${esc(i.name)} (${esc(i.qty)}x)</li>`).join('');
+                $('p-items').innerHTML = itemsList;
+
+                window.print();
+            }
+        });
 
         $('orders-list').addEventListener('click', async (e) => {
             const btn = e.target.closest('button[data-no]');
