@@ -1,4 +1,3 @@
-
 ///Navbar aktif dan Scrool Bar
 
 let menuIcon = document.querySelector('#menu-icon');
@@ -256,10 +255,10 @@ if (closeCartBtn) {
 
 // ISI DATA PEMBAYARAN KAMU DI SINI
 const PAYMENT = {
-    qris:  { label: 'QRIS', image: 'assets/pict/qris.png' },
+    qris:  { label: 'QRIS', image: 'assets/pict/QR.jpeg' },
     dana:  { label: 'DANA', number: '083193887278', holder: 'Phanji Arya Baskhara' },
     gopay: { label: 'GoPay', number: '083193887278', holder: 'Phanji Arya Baskhara' },
-    bri:   { label: 'Transfer Bank BRI', number: 'xxxxxxxxxxxxxxx', holder: 'Nama Pemilik' }
+    bri:   { label: 'BRI', number: '742201026876537', holder: 'Phanji Arya Baskhara' }
 };
 
 const $ = id => document.getElementById(id);
@@ -371,11 +370,31 @@ function renderDetail(o) {
     const bg = final ? '#ffebee' : done ? '#e8f5e9' : '#fff8e1';
     const fg = final ? '#d70032' : done ? '#26971b' : '#b36b00';
 
+    // TAMBAHAN: Kotak Struk Klaim Pesanan jika status sudah Menunggu Kirim / Sedang Dikirim / Selesai
+    const isReadyOrShipping = ['Menunggu Kirim', 'Sedang Dikirim', 'Selesai'].includes(o.status);
+    let claimReceiptHTML = '';
+    if (isReadyOrShipping) {
+        claimReceiptHTML = `
+            <div style="margin: 1.5rem 0; padding: 1.5rem; background: #fff3e0; border: 2px dashed #ffb300; border-radius: 1rem; text-align: center;">
+                <h3 style="color: #e65100; font-size: 1.6rem; margin-bottom: 0.5rem;">🎫 STRUK KLAIM PESANAN</h3>
+                <p style="font-size: 1.2rem; color: #666; margin-bottom: 1rem;">Tunjukkan nomor ini ke kurir / admin saat pengambilan</p>
+                <div style="font-size: 2.4rem; font-weight: bold; color: #d70032; background: white; padding: 0.8rem; border-radius: 0.6rem; display: inline-block; letter-spacing: 2px;">
+                    ${esc(o.orderNo)}
+                </div>
+                <p style="font-size: 1.3rem; margin-top: 1rem; font-weight: bold;">Pemesan: ${esc(o.name)}</p>
+                <p style="font-size: 1.2rem; color: #444;">Metode: <strong>${esc(o.method)}</strong> | Total: <strong>${rp(o.total)}</strong></p>
+            </div>
+        `;
+    }
+
     res.innerHTML = `
         <p><strong>No. Pesanan: ${esc(o.orderNo)}</strong></p>
         <p>Nama: ${esc(o.name)} | ${esc(o.method)}</p>
         <ul style="margin:0.8rem 0 0.8rem 2rem;">${items}</ul>
         <p>Total: <strong>${rp(o.total)}</strong></p>
+        
+        ${claimReceiptHTML}
+
         <div style="margin:1.2rem 0; padding:1.2rem; border-radius:1rem; text-align:center; font-size:1.6rem; font-weight:bold; background:${bg}; color:${fg};">
             ${done ? '✅ ' : ''}${esc(statusText(o.status, o.method))}
             ${o.rejectReason ? `<br><small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
