@@ -316,7 +316,7 @@ if (navEl && cartIcon) { navEl.insertBefore(orderLink, cartIcon); navEl.insertBe
 authLink.addEventListener('click', (e) => {
     e.preventDefault();
     if (!user) login();
-    else if (confirm('Log Out' + user.email + '?')) signOut(auth);
+    else if (confirm('Log Out dari ' + user.email + '?')) signOut(auth);
 });
 
 // ---------- DATA PESANAN (hanya milik user yang login) ----------
