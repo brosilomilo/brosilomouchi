@@ -40,32 +40,62 @@
         .empty { color: #888; padding: 20px; }
         .hidden { display: none !important; }
 
-        /* AREA KHUSUS CETAK STRUK */
-        #print-area { display: none; }
+        /* FORMAT STRUK KASIR THERMAL KHUSUS SAAT PRINT */
+        #print-receipt { display: none; }
         @media print {
             body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: monospace; color: black; background: white; }
+            #print-receipt, #print-receipt * { visibility: visible; }
+            #print-receipt {
+                display: block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 58mm; /* Lebar standar printer kasir thermal */
+                padding: 5px;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 11px;
+                color: #000;
+                background: #fff;
+            }
+            .receipt-header { text-align: center; margin-bottom: 8px; }
+            .receipt-header h2 { font-size: 14px; font-weight: bold; margin-bottom: 2px; text-align: center; color: #000; }
+            .receipt-divider { border-top: 1px dashed #000; margin: 6px 0; }
+            .receipt-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .receipt-items { margin: 6px 0; }
+            .receipt-item-line { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
+            .receipt-total { font-weight: bold; font-size: 12px; margin-top: 4px; }
+            .receipt-footer { text-align: center; margin-top: 10px; font-size: 10px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- AREA STRUK YANG AKAN DICETAK -->
-    <div id="print-area">
-        <h2 style="text-align:center; font-size: 20px; margin-bottom: 5px;">BROSiLO MOUCHi</h2>
-        <p style="text-align:center; font-size: 12px; margin-bottom: 15px;">Struk Bukti Pesanan</p>
-        <hr style="border: dashed 1px #000; margin-bottom: 10px;">
-        <p><strong>No. Pesanan :</strong> <span id="p-no"></span></p>
-        <p><strong>Tanggal     :</strong> <span id="p-time"></span></p>
-        <p><strong>Nama Pemesan:</strong> <span id="p-name"></span></p>
-        <p><strong>Metode      :</strong> <span id="p-method"></span></p>
-        <hr style="border: dashed 1px #000; margin: 10px 0;">
-        <p><strong>Daftar Item:</strong></p>
-        <ul id="p-items" style="list-style: none; padding-left: 0; margin-bottom: 10px;"></ul>
-        <hr style="border: dashed 1px #000; margin: 10px 0;">
-        <p style="font-size: 16px;"><strong>Total: <span id="p-total"></span></strong></p>
-        <p style="font-size: 12px; text-align: center; margin-top: 20px;">=== TERIMA KASIH ===</p>
+    <!-- STRUK KASIR HTML LAYOUT -->
+    <div id="print-receipt">
+        <div class="receipt-header">
+            <h2>BROSiLO MOUCHi</h2>
+            <p style="font-size: 10px; color: #000; margin-bottom:0;">Pre-Order Mochi Padang</p>
+        </div>
+        <div class="receipt-divider"></div>
+        <div style="font-size: 10px;">
+            <div>No : <span id="rcpt-no"></span></div>
+            <div>Tgl: <span id="rcpt-date"></span></div>
+            <div>Pemesan: <span id="rcpt-name"></span></div>
+            <div>Metode: <span id="rcpt-method"></span></div>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-items" id="rcpt-items">
+            <!-- Item mochi masuk sini secara dinamis -->
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-row receipt-total">
+            <span>TOTAL:</span>
+            <span id="rcpt-total"></span>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-footer">
+            Terima Kasih!<br>Simpan struk ini sebagai bukti klaim.
+        </div>
     </div>
 
     <!-- LOGIN ADMIN -->
@@ -171,32 +201,24 @@
         // ---------- PESANAN ----------
         let orders = [], filter = 'aktif', unsubs = [];
 
-        // Daftar tombol aksi per status
         function actions(o) {
             const pickup = o.method === 'Dijemput';
             const reject = { label: 'Tolak Pesanan', cls: 'btn-close', next: 'Ditolak', reason: true,
-                confirm: 'Tolak pesanan ' + o.orderNo + '?' + (['Menunggu', 'Diproses'].includes(o.status) ? ' (Kalau sudah dibayar, jangan lupa refund.)' : '') };
+                confirm: 'Tolak pesanan ' + o.orderNo + '?' + (['Menunggu', 'Diproses'].includes(o.status) ? ' (Jangan lupa refund jika sudah bayar.)' : '') };
             switch (o.status) {
-                case 'Menunggu Pembayaran':
-                    return [reject];
-                case 'Verifikasi Pembayaran':
-                    return [
-                        { label: 'Pembayaran Valid ✓', cls: 'btn-open', next: 'Menunggu', extra: { paidAt: Date.now() }, confirm: 'Uang ' + rp(o.total) + ' untuk ' + o.orderNo + ' sudah benar-benar masuk?' },
-                        { label: 'Pembayaran Tidak Ditemukan', cls: 'btn-del', next: 'Menunggu Pembayaran', extra: { paymentNote: 'Pembayaran belum kami temukan / tidak sesuai. Silakan bayar ulang atau hubungi admin.' }, confirm: 'Kembalikan ke "Menunggu Pembayaran"?' },
-                        reject
-                    ];
-                case 'Menunggu':
-                    return [{ label: 'Proses Pesanan', cls: 'btn-open', next: 'Diproses' }, reject];
-                case 'Diproses':
-                    return [{ label: 'Pesanan Siap → ' + (pickup ? 'Siap Diambil' : 'Menunggu Kirim'), cls: 'btn-open', next: 'Menunggu Kirim', confirm: 'Pesanan ' + o.orderNo + ' sudah selesai dibuat?' }, reject];
-                case 'Menunggu Kirim':
-                    return [pickup
-                        ? { label: 'Sudah Diambil → Selesai', cls: 'btn-open', next: 'Selesai', confirm: 'Pesanan ' + o.orderNo + ' sudah diambil pembeli?' }
-                        : { label: 'Mulai Kirim', cls: 'btn-open', next: 'Sedang Dikirim', confirm: 'Pesanan ' + o.orderNo + ' sudah dibawa kurir / mulai dikirim?' }];
-                case 'Sedang Dikirim':
-                    return [{ label: 'Sudah Sampai → Selesai', cls: 'btn-open', next: 'Selesai', confirm: 'Pesanan ' + o.orderNo + ' sudah sampai ke pembeli?' }];
-                default:
-                    return [];
+                case 'Menunggu Pembayaran': return [reject];
+                case 'Verifikasi Pembayaran': return [
+                    { label: 'Pembayaran Valid ✓', cls: 'btn-open', next: 'Menunggu', extra: { paidAt: Date.now() }, confirm: 'Uang ' + rp(o.total) + ' untuk ' + o.orderNo + ' sudah masuk?' },
+                    { label: 'Pembayaran Tidak Ditemukan', cls: 'btn-del', next: 'Menunggu Pembayaran', extra: { paymentNote: 'Pembayaran belum ditemukan / tidak sesuai.' }, confirm: 'Kembalikan?' },
+                    reject
+                ];
+                case 'Menunggu': return [{ label: 'Proses Pesanan', cls: 'btn-open', next: 'Diproses' }, reject];
+                case 'Diproses': return [{ label: 'Pesanan Siap → ' + (pickup ? 'Siap Diambil' : 'Menunggu Kirim'), cls: 'btn-open', next: 'Menunggu Kirim', confirm: 'Pesanan ' + o.orderNo + ' selesai dibuat?' }, reject];
+                case 'Menunggu Kirim': return [pickup
+                    ? { label: 'Sudah Diambil → Selesai', cls: 'btn-open', next: 'Selesai', confirm: 'Pesanan ' + o.orderNo + ' sudah diambil?' }
+                    : { label: 'Mulai Kirim', cls: 'btn-open', next: 'Sedang Dikirim', confirm: 'Mulai kirim pesanan ' + o.orderNo + '?' }];
+                case 'Sedang Dikirim': return [{ label: 'Sudah Sampai → Selesai', cls: 'btn-open', next: 'Selesai', confirm: 'Pesanan ' + o.orderNo + ' sudah sampai?' }];
+                default: return [];
             }
         }
 
@@ -212,6 +234,7 @@
                 const label = o.status === 'Menunggu Kirim' && o.method === 'Dijemput' ? 'Siap Diambil' : o.status === 'Menunggu' ? 'Sudah Dibayar' : o.status;
                 const pay = o.payment ? `<div style="font-size:14px; margin-top:6px;">💳 ${esc(o.payment.method)} • pengirim: <strong>${esc(o.payment.payer)}</strong></div>` : '';
                 const btns = actions(o).map((a, i) => `<button class="btn ${a.cls}" data-no="${esc(o.orderNo)}" data-i="${i}">${esc(a.label)}</button>`).join('');
+                
                 return `
                 <div class="order">
                     <div class="order-head">
@@ -223,14 +246,14 @@
                     <div><strong>Total: ${rp(o.total)}</strong> <small>• ${esc(time)}</small></div>
                     ${pay}
                     ${o.rejectReason ? `<small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
-                    <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">Cetak Struk Pesanan</button>
+                    <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">🖨️ Cetak Struk Kasir</button>
                     ${btns}
                     ${FINAL.includes(o.status) ? `<button class="btn btn-del" data-no="${esc(o.orderNo)}" data-i="del">Hapus</button>` : ''}
                 </div>`;
             }).join('');
         }
 
-        // FUNGSI EKSEKUSI CETAK STRUK
+        // FUNGSI CETAK FORMAT STRUK KASIR THERMAL
         document.addEventListener('click', (e) => {
             const printBtn = e.target.closest('button[data-print]');
             if (printBtn) {
@@ -238,14 +261,19 @@
                 const o = orders.find(x => x.orderNo === orderNo);
                 if (!o) return;
 
-                $('p-no').innerText = o.orderNo;
-                $('p-time').innerText = new Date(o.createdAt).toLocaleString('id-ID');
-                $('p-name').innerText = o.name;
-                $('p-method').innerText = o.method;
-                $('p-total').innerText = rp(o.total);
-                
-                const itemsList = Object.values(o.items || {}).map(i => `<li>- ${esc(i.name)} (${esc(i.qty)}x)</li>`).join('');
-                $('p-items').innerHTML = itemsList;
+                $('rcpt-no').innerText = o.orderNo;
+                $('rcpt-date').innerText = new Date(o.createdAt).toLocaleString('id-ID');
+                $('rcpt-name').innerText = o.name;
+                $('rcpt-method').innerText = o.method;
+                $('rcpt-total').innerText = rp(o.total);
+
+                const itemsHtml = Object.values(o.items || {}).map(i => `
+                    <div class="receipt-item-line">
+                        <span>${esc(i.name)} (${i.qty}x)</span>
+                        <span>${rp(i.price * i.qty)}</span>
+                    </div>
+                `).join('');
+                $('rcpt-items').innerHTML = itemsHtml;
 
                 window.print();
             }
@@ -266,24 +294,24 @@
             if (a.confirm && !confirm(a.confirm)) return;
             const extra = { ...(a.extra || {}) };
             if (a.reason) {
-                const r = prompt('Alasan menolak (akan dilihat pembeli):');
+                const r = prompt('Alasan menolak:');
                 if (r === null) return;
-                extra.rejectReason = r.trim().slice(0, 120) || 'Maaf, pesanan tidak bisa kami proses.';
+                extra.rejectReason = r.trim().slice(0, 120) || 'Maaf, pesanan tidak bisa diproses.';
             }
             try {
                 await update(ref(db, 'orders/' + o.orderNo), { status: a.next, updatedAt: Date.now(), ...extra });
             } catch (err) {
-                alert('Gagal mengubah status: ' + err.message);
+                alert('Gagal: ' + err.message);
             }
         });
 
         $('btn-clear').addEventListener('click', async () => {
             const done = orders.filter(o => FINAL.includes(o.status));
             if (!done.length) return;
-            if (!confirm('Hapus ' + done.length + ' pesanan selesai/batal/ditolak secara permanen?')) return;
+            if (!confirm('Hapus semua pesanan selesai?')) return;
             const updates = {};
             done.forEach(o => { updates[o.orderNo] = null; });
-            try { await update(ref(db, 'orders'), updates); } catch (err) { alert('Gagal menghapus: ' + err.message); }
+            try { await update(ref(db, 'orders'), updates); } catch (err) { alert('Gagal: ' + err.message); }
         });
 
         document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
@@ -314,7 +342,6 @@
             }));
         }
 
-        // ---------- GERBANG LOGIN ----------
         onAuthStateChanged(auth, async (u) => {
             unsubs.forEach(f => f()); unsubs = [];
             if (!u) {
