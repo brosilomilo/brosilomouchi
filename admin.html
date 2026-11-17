@@ -194,7 +194,7 @@
                     <div><strong>Total: ${rp(o.total)}</strong> <small>• ${esc(time)}</small></div>
                     ${pay}
                     ${o.rejectReason ? `<small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
-                    <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">🖨️ Cetak Struk Kasir</button>
+                    <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">Cetak Struk Pesanan</button>
                     ${btns}
                     ${FINAL.includes(o.status) ? `<button class="btn btn-del" data-no="${esc(o.orderNo)}" data-i="del">Hapus</button>` : ''}
                 </div>`;
