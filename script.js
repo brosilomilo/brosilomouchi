@@ -233,7 +233,7 @@ function renderCartItems() {
     const ongkir = getShipping();
     const subEl = document.getElementById('cart-subtotal'), shipEl = document.getElementById('cart-shipping');
     if (subEl) subEl.innerText = 'Rp ' + totalHarga.toLocaleString('id-ID');
-    if (shipEl) shipEl.innerText = ongkir ? 'Rp ' + ongkir.toLocaleString('id-ID') : 'Gratis (diambil sendiri)';
+    if (shipEl) shipEl.innerText = ongkir ? 'Rp ' + ongkir.toLocaleString('id-ID') : 'Gratis';
     totalPriceElement.innerText = 'Rp ' + (totalHarga + ongkir).toLocaleString('id-ID');
 }
 
