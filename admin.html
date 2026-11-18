@@ -191,7 +191,7 @@
                     </div>
                     <div><strong>${esc(o.name)}</strong> | ${esc(o.method)}${o.email ? ' | <small>' + esc(o.email) + '</small>' : ''}</div>
                     <ul>${items}</ul>
-                    <div><strong>Total: ${rp(o.total)}</strong> <small>• ${esc(time)}</small></div>
+                    <div><strong>Total: ${rp(o.total)}</strong>${o.shipping ? ' <small>(termasuk ongkir ' + rp(o.shipping) + ')</small>' : ''} <small>• ${esc(time)}</small></div>
                     ${pay}
                     ${o.rejectReason ? `<small>Alasan: ${esc(o.rejectReason)}</small>` : ''}
                     <button class="btn btn-print" data-print="${esc(o.orderNo)}" style="background: #0288d1; margin-top: 10px;">Cetak Struk Pesanan</button>
@@ -251,6 +251,7 @@
                         </div>
                         <div class="line"></div>
                         <div>${itemsHtml}</div>
+                        ${o.shipping ? `<div class="row"><span class="nm">Ongkir</span><span class="pr">${rp(o.shipping)}</span></div>` : ''}
                         <div class="line"></div>
                         <div class="row total">
                             <span class="nm">Total</span>
