@@ -213,7 +213,7 @@
                 
                 const itemsHtml = Object.values(o.items || {}).map(i => `
                     <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
-                        <span>${esc(i.name)} (${i.qty}x)</span>
+                        <span>${esc(i.name)} (${esc(i.qty)}x)</span>
                         <span>${rp(i.price * i.qty)}</span>
                     </div>
                 `).join('');
@@ -221,7 +221,7 @@
                 printWindow.document.write(`
                     <html>
                     <head>
-                        <title>Cetak Struk - ${o.orderNo}</title>
+                        <title>Cetak Struk - ${esc(o.orderNo)}</title>
                         <style>
                             body { font-family: 'Courier New', Courier, monospace; width: 58mm; margin: 0; padding: 5px; color: #000; }
                             .center { text-align: center; }
@@ -235,10 +235,10 @@
                         <div class="center" style="font-size: 10px;">Pre-Order Mochi Padang</div>
                         <div class="line"></div>
                         <div style="font-size: 11px;">
-                            <div class="bold" style="font-size: 13px;">ID: ${o.orderNo}</div>
+                            <div class="bold" style="font-size: 13px;">ID: ${esc(o.orderNo)}</div>
                             <div>Tgl: ${new Date(o.createdAt).toLocaleString('id-ID')}</div>
-                            <div>Pemesan: ${o.name}</div>
-                            <div>Metode: ${o.method}</div>
+                            <div>Pemesan: ${esc(o.name)}</div>
+                            <div>Metode: ${esc(o.method)}</div>
                         </div>
                         <div class="line"></div>
                         <div>${itemsHtml}</div>
