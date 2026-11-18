@@ -96,6 +96,11 @@ onValue(statusRef, (snapshot) => {
 let cart = JSON.parse(localStorage.getItem('brosilo_cart')) || [];
 let selectedBaseProduct = null;
 
+// ONGKIR: biaya antar (ubah angkanya di sini)
+const SHIPPING_FEE = 3000;
+const getMethod = () => { const r = document.querySelector('input[name="delivery-method"]:checked'); return r ? r.value : 'Diantar'; };
+const getShipping = () => (getMethod() === 'Diantar' ? SHIPPING_FEE : 0);
+
 // Elemen Modal Paket & Keranjang
 const packageModal = document.getElementById('package-modal');
 const cartModal = document.getElementById('cart-modal');
@@ -197,6 +202,9 @@ function renderCartItems() {
     if (cart.length === 0) {
         container.innerHTML = '<p style="text-align: center; font-size: 1.6rem;">Keranjang masih kosong nih.</p>';
         totalPriceElement.innerText = 'Rp 0';
+        const s0 = document.getElementById('cart-subtotal'), g0 = document.getElementById('cart-shipping');
+        if (s0) s0.innerText = 'Rp 0';
+        if (g0) g0.innerText = 'Rp 0';
         return;
     }
 
@@ -222,8 +230,15 @@ function renderCartItems() {
     });
 
     container.innerHTML = html;
-    totalPriceElement.innerText = 'Rp ' + totalHarga.toLocaleString('id-ID');
+    const ongkir = getShipping();
+    const subEl = document.getElementById('cart-subtotal'), shipEl = document.getElementById('cart-shipping');
+    if (subEl) subEl.innerText = 'Rp ' + totalHarga.toLocaleString('id-ID');
+    if (shipEl) shipEl.innerText = ongkir ? 'Rp ' + ongkir.toLocaleString('id-ID') : 'Gratis (diambil sendiri)';
+    totalPriceElement.innerText = 'Rp ' + (totalHarga + ongkir).toLocaleString('id-ID');
 }
+
+// Ganti metode Diantar / Dijemput -> total ikut berubah
+document.querySelectorAll('input[name="delivery-method"]').forEach(r => r.addEventListener('change', renderCartItems));
 
 // Fungsi ubah jumlah item (+ / -) di modal keranjang
 window.changeQty = function(index, amount) {
@@ -391,6 +406,7 @@ function renderDetail(o) {
         <p><strong>No. Pesanan: ${esc(o.orderNo)}</strong></p>
         <p>Nama: ${esc(o.name)} | ${esc(o.method)}</p>
         <ul style="margin:0.8rem 0 0.8rem 2rem;">${items}</ul>
+        ${o.shipping ? `<p>Subtotal: ${rp(o.subtotal)} | Ongkir: ${rp(o.shipping)}</p>` : ''}
         <p>Total: <strong>${rp(o.total)}</strong></p>
         
         ${claimReceiptHTML}
@@ -470,9 +486,10 @@ if (checkoutBtn) {
         if (!isStoreOpen) { alert("Yah maaf nih lagi tutup, Transaksi lagi limit!!"); return; }
         if (cart.length === 0) { alert('Keranjang kamu masih kosong!'); return; }
 
-        const radio = document.querySelector('input[name="delivery-method"]:checked');
-        const method = radio ? radio.value : 'Diantar';
-        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        const method = getMethod();
+        const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        const shipping = getShipping();
+        const total = subtotal + shipping;
 
         checkoutBtn.disabled = true;
         checkoutBtn.innerText = 'Mengirim...';
@@ -485,7 +502,7 @@ if (checkoutBtn) {
                         orderNo: no, uid: user.uid, email: user.email,
                         name: buyerName.slice(0, 60), method,
                         items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
-                        total, status: 'Menunggu Pembayaran',
+                        subtotal, shipping, total, status: 'Menunggu Pembayaran',
                         createdAt: Date.now(), updatedAt: Date.now()
                     });
                     orderNo = no;
