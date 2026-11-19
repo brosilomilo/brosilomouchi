@@ -512,3 +512,4 @@ if (checkoutBtn) {
 }
 
 updateCartCount();
+ 
