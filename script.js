@@ -30,7 +30,7 @@ menuIcon.onclick = () => {
 ///Status Toko & Deskripsi Update Realtime dari Firebase
 ///admin
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, get, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Konfigurasi Firebase
@@ -132,7 +132,7 @@ document.querySelectorAll('.services .btn').forEach((btn, index) => {
         
         // Cek apakah toko sedang tutup
         if (!isStoreOpen) {
-            alert("Yah maaf nih lagi tutup, tunggu buka ya!!");
+            alert("Yah maaf nih lagi tutup, P.O buka dari jam 00:00 - 17:00 yaa!");
             return;
         }
 
@@ -183,7 +183,7 @@ if (confirmAddBtn) {
 
         saveCart();
         packageModal.classList.remove('active');
-        alert(`${fullItemName} berhasil ditambahkan, cek di logo keranjang!`);
+        alert(`${fullItemName} berhasil ditambahkan ke keranjang!`);
     });
 }
 
@@ -271,7 +271,7 @@ function getSteps(method) {
     return method === 'Dijemput' ? [...s, 'Selesai'] : [...s, 'Sedang Dikirim', 'Selesai'];
 }
 function statusText(status, method) {
-    const pickup = method === 'Jemput';
+    const pickup = method === 'Dijemput';
     return ({
         'Menunggu Pembayaran': 'Menunggu pembayaran',
         'Verifikasi Pembayaran': 'Pembayaran sedang diverifikasi admin',
@@ -323,7 +323,7 @@ let myOrders = {}, selected = null, unsubOrders = null;
 
 onAuthStateChanged(auth, (u) => {
     user = u;
-    authLink.innerText = u ? 'Log Out' : 'Log In';
+    authLink.innerText = u ? 'Keluar' : 'Login';
     const nameInput = $('buyer-name');
     if (u && nameInput && !nameInput.value) nameInput.value = u.displayName || '';
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
@@ -377,7 +377,7 @@ function renderDetail(o) {
         claimReceiptHTML = `
             <div style="margin: 1.5rem 0; padding: 1.5rem; background: #fff3e0; border: 2px dashed #ffb300; border-radius: 1rem; text-align: center;">
                 <h3 style="color: #e65100; font-size: 1.6rem; margin-bottom: 0.5rem;">🎫 STRUK KLAIM PESANAN</h3>
-                <p style="font-size: 1.2rem; color: #666; margin-bottom: 1rem;">Tunjukkan nomor ini ke kurir / rekan Brosilo Mouchi saat pengambilan</p>
+                <p style="font-size: 1.2rem; color: #666; margin-bottom: 1rem;">Tunjukkan nomor ini ke kurir / admin saat pengambilan</p>
                 <div style="font-size: 2.4rem; font-weight: bold; color: #d70032; background: white; padding: 0.8rem; border-radius: 0.6rem; display: inline-block; letter-spacing: 2px;">
                     ${esc(o.orderNo)}
                 </div>
@@ -466,8 +466,8 @@ if (checkoutBtn) {
         if (!user) { alert('Login dulu pakai akun Google ya sebelum checkout.'); login(); return; }
         const buyerNameInput = $('buyer-name');
         const buyerName = buyerNameInput ? buyerNameInput.value.trim() : '';
-        if (!buyerName) { alert('Masukkin nama kamu dulu sebelum checkout cuy!'); if (buyerNameInput) buyerNameInput.focus(); return; }
-        if (!isStoreOpen) { alert("Yah maaf nih lagi tutup atau, Transaksi lagi limit!!"); return; }
+        if (!buyerName) { alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!'); if (buyerNameInput) buyerNameInput.focus(); return; }
+        if (!isStoreOpen) { alert("Yah maaf nih lagi tutup, Transaksi lagi limit!!"); return; }
         if (cart.length === 0) { alert('Keranjang kamu masih kosong!'); return; }
 
         const radio = document.querySelector('input[name="delivery-method"]:checked');
@@ -477,7 +477,7 @@ if (checkoutBtn) {
         checkoutBtn.disabled = true;
         checkoutBtn.innerText = 'Mengirim...';
         try {
-            let orderNo = null;
+            let orderNo = null, lastErr = null;
             for (let i = 0; i < 5 && !orderNo; i++) {
                 const no = 'BM-' + Math.floor(1000 + Math.random() * 9000);
                 try {
@@ -489,17 +489,21 @@ if (checkoutBtn) {
                         createdAt: Date.now(), updatedAt: Date.now()
                     });
                     orderNo = no;
-                } catch (e) { console.warn('Coba lagi:', e.code); }
+                } catch (e) { lastErr = e; console.warn('Coba lagi:', e.code, e.message); }
             }
-            if (!orderNo) throw new Error('gagal membuat pesanan');
+            if (!orderNo) throw lastErr || new Error('gagal membuat pesanan');
 
             cart = []; saveCart();
             cartModal.classList.remove('active');
             openOrderModal(orderNo);
-            alert('Pesanan dibuat cuy!,bayar dulu ya supaya pesananmu diproses.');
+            alert('Pesanan dibuat! Selesaikan pembayaran supaya pesananmu diproses.');
         } catch (err) {
             console.error(err);
-            alert('Gagal mengirim pesanan. Pastikan toko lagi buka, terus coba lagi ya.');
+            // DIAGNOSA: tampilkan penyebab asli (hapus blok ini kalau sudah beres)
+            const dbOpen = await get(ref(db, 'storeStatus/isOpen')).then(s => JSON.stringify(s.val())).catch(() => 'tidak terbaca');
+            alert('Gagal mengirim pesanan.\nKode: ' + (err.code || err.message) +
+                '\nisOpen di database: ' + dbOpen +
+                '\nLogin anonim: ' + (user && user.isAnonymous ? 'YA (salah akun)' : 'tidak'));
         } finally {
             checkoutBtn.disabled = false;
             checkoutBtn.innerText = 'Checkout';
