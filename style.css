@@ -57,6 +57,14 @@ body {
     transform: scale(1.1);
 }
 
+.header .logo img {
+    height: 40px;
+    width: auto;
+    transform: scale(2.05); /* Perbesar visual 1.25x (sesuaikan angkanya) */
+    transform-origin: left center; /* Membesar ke arah kanan, tidak ke atas/bawah */
+    display: block;
+}
+
 span {
     color: var(--main-color);
 }
