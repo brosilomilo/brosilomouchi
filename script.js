@@ -31,7 +31,7 @@ menuIcon.onclick = () => {
 ///admin
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Konfigurasi Firebase
 const firebaseConfig = {
@@ -303,9 +303,95 @@ function statusText(status, method) {
 // ---------- LOGIN GOOGLE ----------
 const provider = new GoogleAuthProvider();
 let user = null;
-const login = () => signInWithPopup(auth, provider).catch(e => {
-    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') alert('Login gagal: ' + e.message);
+
+// ---------- MODAL LOGIN / DAFTAR ----------
+const authModal = document.createElement('div');
+authModal.className = 'cart-modal';
+authModal.id = 'auth-modal';
+const inp = 'width:100%; padding:1rem; font-size:1.4rem; border:2px solid #ddd; border-radius:0.8rem; margin-bottom:1rem; outline:none;';
+authModal.innerHTML = `
+    <div class="cart-content">
+        <h2 id="auth-title">Masuk</h2>
+        <button class="btn" id="google-btn" style="width:100%; background:#fff; color:#333; border:2px solid #ddd;">Lanjutkan dengan Google</button>
+        <p style="font-size:1.3rem; color:#888; margin:1.2rem 0;">atau pakai email</p>
+        <div style="text-align:left;">
+            <input type="text" id="auth-name" placeholder="Nama kamu" autocomplete="name" style="${inp} display:none;">
+            <input type="email" id="auth-email" placeholder="Email" autocomplete="email" style="${inp}">
+            <input type="password" id="auth-pass" placeholder="Password (min. 6 karakter)" autocomplete="current-password" style="${inp}">
+        </div>
+        <p id="auth-msg" style="font-size:1.3rem; color:#d70032; min-height:1.6rem; margin-bottom:1rem;"></p>
+        <button class="btn" id="auth-submit" style="width:100%;">Masuk</button>
+        <p style="font-size:1.3rem; margin:1rem 0;">
+            <a href="#" id="auth-switch">Belum punya akun? Daftar</a> | <a href="#" id="auth-reset">Lupa password?</a>
+        </p>
+        <button class="btn" id="close-auth-btn" style="background:#555; width:100%;">Tutup</button>
+    </div>`;
+document.body.appendChild(authModal);
+
+let authMode = 'login';
+const setAuthMode = (m) => {
+    authMode = m;
+    $('auth-title').innerText = m === 'login' ? 'Masuk' : 'Daftar Akun';
+    $('auth-submit').innerText = m === 'login' ? 'Masuk' : 'Daftar';
+    $('auth-name').style.display = m === 'login' ? 'none' : 'block';
+    $('auth-pass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    $('auth-switch').innerText = m === 'login' ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk';
+    $('auth-msg').innerText = '';
+};
+const openAuthModal = (m = 'login') => { setAuthMode(m); authModal.classList.add('active'); };
+const closeAuthModal = () => authModal.classList.remove('active');
+const login = () => openAuthModal();
+
+const authError = (e) => ({
+    'auth/email-already-in-use': 'Email ini sudah terdaftar. Coba Masuk.',
+    'auth/invalid-email': 'Format email salah.',
+    'auth/weak-password': 'Password minimal 6 karakter.',
+    'auth/invalid-credential': 'Email atau password salah.',
+    'auth/wrong-password': 'Email atau password salah.',
+    'auth/user-not-found': 'Email atau password salah.',
+    'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi nanti.',
+    'auth/network-request-failed': 'Koneksi bermasalah, coba lagi.',
+    'auth/operation-not-allowed': 'Login dengan email belum diaktifkan.'
+})[e.code] || ('Gagal: ' + e.message);
+
+$('google-btn').onclick = () => signInWithPopup(auth, provider).catch(e => {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') $('auth-msg').innerText = authError(e);
 });
+
+$('auth-submit').onclick = async () => {
+    const email = $('auth-email').value.trim(), pass = $('auth-pass').value, name = $('auth-name').value.trim();
+    const msg = $('auth-msg'), btn = $('auth-submit');
+    msg.style.color = '#d70032'; msg.innerText = '';
+    if (!email || !pass) { msg.innerText = 'Email dan password wajib diisi.'; return; }
+    if (authMode === 'register' && !name) { msg.innerText = 'Nama wajib diisi.'; return; }
+    btn.disabled = true;
+    try {
+        if (authMode === 'login') {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } else {
+            const c = await createUserWithEmailAndPassword(auth, email, pass);
+            await updateProfile(c.user, { displayName: name.slice(0, 60) });
+            const n = $('buyer-name');
+            if (n && !n.value) n.value = name;
+        }
+    } catch (e) { msg.innerText = authError(e); }
+    finally { btn.disabled = false; }
+};
+['auth-email', 'auth-pass', 'auth-name'].forEach(id => $(id).addEventListener('keypress', (e) => { if (e.key === 'Enter') $('auth-submit').click(); }));
+
+$('auth-switch').onclick = (e) => { e.preventDefault(); setAuthMode(authMode === 'login' ? 'register' : 'login'); };
+$('auth-reset').onclick = async (e) => {
+    e.preventDefault();
+    const email = $('auth-email').value.trim(), msg = $('auth-msg');
+    msg.style.color = '#d70032';
+    if (!email) { msg.innerText = 'Isi email dulu di atas, lalu klik Lupa password.'; return; }
+    try {
+        await sendPasswordResetEmail(auth, email);
+        msg.style.color = '#26971b';
+        msg.innerText = 'Link reset password dikirim ke emailmu (cek juga folder spam).';
+    } catch (err) { msg.innerText = authError(err); }
+};
+$('close-auth-btn').onclick = closeAuthModal;
 
 // ---------- MODAL "PESANAN SAYA" ----------
 const orderModal = document.createElement('div');
@@ -323,7 +409,7 @@ document.body.appendChild(orderModal);
 const orderLink = document.createElement('a');
 orderLink.href = '#'; orderLink.id = 'order-link'; orderLink.innerText = 'Pesanan Saya';
 const authLink = document.createElement('a');
-authLink.href = '#'; authLink.id = 'auth-link'; authLink.innerText = 'Log In';
+authLink.href = '#'; authLink.id = 'auth-link'; authLink.innerText = 'Login';
 const navEl = document.querySelector('header nav');
 if (navEl && cartIcon) { navEl.insertBefore(orderLink, cartIcon); navEl.insertBefore(authLink, cartIcon); }
 
@@ -338,6 +424,7 @@ let myOrders = {}, selected = null, unsubOrders = null;
 
 onAuthStateChanged(auth, (u) => {
     user = u;
+    if (u) closeAuthModal();
     authLink.innerText = u ? 'Keluar' : 'Login';
     const nameInput = $('buyer-name');
     if (u && nameInput && !nameInput.value) nameInput.value = u.displayName || '';
@@ -358,7 +445,7 @@ const act = (no, data) => update(ref(db, 'orders/' + no), { ...data, updatedAt: 
 function render() {
     const box = $('track-history'), res = $('track-result');
     if (!user) {
-        box.innerHTML = '<p>Login dulu untuk melihat pesananmu.</p><button class="btn" id="login-btn" style="margin-top:1rem;">Login dengan Google</button>';
+        box.innerHTML = '<p>Login dulu untuk melihat pesananmu.</p><button class="btn" id="login-btn" style="margin-top:1rem;">Masuk / Daftar</button>';
         res.innerHTML = '';
         $('login-btn').onclick = login;
         return;
@@ -479,7 +566,7 @@ $('close-order-btn').addEventListener('click', () => orderModal.classList.remove
 const checkoutBtn = $('checkout-btn');
 if (checkoutBtn) {
     checkoutBtn.addEventListener('click', async () => {
-        if (!user) { alert('Login dulu pakai akun Google ya sebelum checkout.'); login(); return; }
+        if (!user) { alert('Masuk atau daftar akun dulu ya sebelum checkout.'); login(); return; }
         const buyerNameInput = $('buyer-name');
         const buyerName = buyerNameInput ? buyerNameInput.value.trim() : '';
         if (!buyerName) { alert('Masukkan nama kamu dulu sebelum checkout ya, Cuy!'); if (buyerNameInput) buyerNameInput.focus(); return; }
