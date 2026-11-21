@@ -49,8 +49,9 @@
     <!-- LOGIN ADMIN -->
     <div class="admin-card" id="login-section">
         <h1>BROSiLO MOUCHi</h1>
-        <p>Masukkan sandi khusus admin</p>
-        <input type="password" id="admin-pass" placeholder="Masukkan sandi..." style="width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px;">
+        <p>Login Admin</p>
+        <input type="text" id="admin-user" placeholder="Username" autocomplete="username" autocapitalize="none" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px;">
+        <input type="password" id="admin-pass" placeholder="Password" autocomplete="current-password" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px;">
         <p id="login-msg" style="color: #d70032;"></p>
         <button class="btn btn-open" id="btn-login">Masuk Dashboard</button>
     </div>
@@ -78,8 +79,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getAuth, signInAnonymously, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDTf3da_pvH0cWCcp3LZlAKo8Byj60BzNU",
@@ -92,9 +93,15 @@
             measurementId: "G-FQ6MFKF6BT"
         };
 
-        const app = initializeApp(firebaseConfig);
+        // App KHUSUS ADMIN (nama 'admin-panel'): sesi loginnya terpisah dari index.html,
+        // jadi login pembeli (Google) dan login admin nggak saling timpa.
+        const app = initializeApp(firebaseConfig, 'admin-panel');
         const db = getDatabase(app);
         const auth = getAuth(app);
+
+        // Username diubah jadi email internal (Firebase Auth butuh format email).
+        // Akun adminnya dibuat di Firebase Console dengan email: <username>@admin.brosilomouchi.app
+        const ADMIN_DOMAIN = '@admin.brosilomouchi.app';
         const statusRef = ref(db, 'storeStatus');
 
         const $ = id => document.getElementById(id);
@@ -102,27 +109,27 @@
         const rp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
         const FINAL = ['Selesai', 'Dibatalkan', 'Ditolak'];
 
-        // ---------- LOGIN SANDI KHUSUS ----------
+        // ---------- LOGIN ADMIN (USERNAME + PASSWORD) ----------
         async function handleLogin() {
-            const pass = $('admin-pass').value.trim();
-            if (!pass) {
-                $('login-msg').innerText = 'Sandi tidak boleh kosong!';
+            const username = $('admin-user').value.trim().toLowerCase();
+            const pass = $('admin-pass').value;
+            if (!username || !pass) {
+                $('login-msg').innerText = 'Username dan password tidak boleh kosong!';
                 return;
             }
             $('btn-login').disabled = true;
             $('btn-login').innerText = 'Memeriksa...';
             $('login-msg').innerText = '';
-
             try {
-                const cred = await signInAnonymously(auth);
-                await set(ref(db, 'adminSessions/' + cred.user.uid), pass);
+                await signInWithEmailAndPassword(auth, username + ADMIN_DOMAIN, pass);
                 $('admin-pass').value = '';
-                $('login-section').classList.add('hidden');
-                $('dashboard-section').classList.remove('hidden');
-                startListeners();
+                // tampilan dashboard diatur oleh onAuthStateChanged di bawah
             } catch (e) {
-                await signOut(auth);
-                $('login-msg').innerText = 'Sandi salah atau akses ditolak!';
+                $('login-msg').innerText = e.code === 'auth/too-many-requests'
+                    ? 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.'
+                    : e.code === 'auth/network-request-failed'
+                        ? 'Koneksi bermasalah, coba lagi.'
+                        : 'Username atau password salah!';
             } finally {
                 $('btn-login').disabled = false;
                 $('btn-login').innerText = 'Masuk Dashboard';
@@ -130,16 +137,13 @@
         }
 
         $('btn-login').addEventListener('click', handleLogin);
-        $('admin-pass').addEventListener('keypress', (e) => {
+        ['admin-user', 'admin-pass'].forEach(id => $(id).addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleLogin();
-        });
+        }));
 
-        $('btn-logout').addEventListener('click', async (e) => {
+        $('btn-logout').addEventListener('click', (e) => {
             e.preventDefault();
-            if (auth.currentUser) {
-                await remove(ref(db, 'adminSessions/' + auth.currentUser.uid)).catch(() => {});
-            }
-            await signOut(auth);
+            signOut(auth);
         });
 
         // ---------- STATUS TOKO ----------
@@ -334,30 +338,18 @@
                 render();
             }, (err) => {
                 $('orders-list').innerHTML = '<div class="empty">Gagal memuat pesanan: ' + esc(err.message) + '</div>';
+                if (/permission/i.test(err.message || '')) {
+                    $('login-msg').innerText = 'Akun ini tidak punya akses admin.';
+                    signOut(auth);
+                }
             }));
         }
 
-        onAuthStateChanged(auth, async (u) => {
+        onAuthStateChanged(auth, (u) => {
             unsubs.forEach(f => f()); unsubs = [];
-            if (!u) {
-                $('dashboard-section').classList.add('hidden');
-                $('login-section').classList.remove('hidden');
-                return;
-            }
-            try {
-                const snap = await get(ref(db, 'adminSessions/' + u.uid));
-                if (snap.exists()) {
-                    $('login-section').classList.add('hidden');
-                    $('dashboard-section').classList.remove('hidden');
-                    startListeners();
-                } else {
-                    $('dashboard-section').classList.add('hidden');
-                    $('login-section').classList.remove('hidden');
-                }
-            } catch (err) {
-                $('dashboard-section').classList.add('hidden');
-                $('login-section').classList.remove('hidden');
-            }
+            $('dashboard-section').classList.toggle('hidden', !u);
+            $('login-section').classList.toggle('hidden', !!u);
+            if (u) startListeners();
         });
     </script>
 </body>
