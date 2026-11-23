@@ -475,12 +475,20 @@ orderModal.innerHTML = `
     </div>`;
 document.body.appendChild(orderModal);
 
+// "Pesanan Saya" = ikon di deretan social icons (bagian depan), di samping ikon keranjang
 const orderLink = document.createElement('a');
-orderLink.href = '#'; orderLink.id = 'order-link'; orderLink.innerText = 'Pesanan Saya';
+orderLink.href = '#'; orderLink.id = 'order-link'; orderLink.title = 'Pesanan Saya';
+orderLink.innerHTML = "<i class='bx bx-receipt'></i>";
+// "Login" tetap di header (navbar)
 const authLink = document.createElement('a');
 authLink.href = '#'; authLink.id = 'auth-link'; authLink.innerText = 'Login';
+const socialEl = document.querySelector('.home .social-icons');
 const navEl = document.querySelector('header nav');
-if (navEl && cartIcon) { navEl.insertBefore(orderLink, cartIcon); navEl.insertBefore(authLink, cartIcon); }
+if (socialEl) {
+    if (cartIcon && cartIcon.parentNode === socialEl) cartIcon.after(orderLink);
+    else socialEl.appendChild(orderLink);
+}
+if (navEl) navEl.appendChild(authLink);
 
 authLink.addEventListener('click', (e) => {
     e.preventDefault();
