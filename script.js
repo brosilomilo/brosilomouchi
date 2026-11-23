@@ -101,6 +101,26 @@ const SHIPPING_FEE = 3000;
 const getMethod = () => { const r = document.querySelector('input[name="delivery-method"]:checked'); return r ? r.value : 'Diantar'; };
 const getShipping = () => (getMethod() === 'Diantar' ? SHIPPING_FEE : 0);
 
+// TITIK JEMPUT (3 opsi) - GANTI nama lokasinya sesuai keinginan
+const PICKUP_POINTS = ['Titik Jemput 1', 'Titik Jemput 2', 'Titik Jemput 3'];
+(function renderPickupOptions() {
+    const box = document.getElementById('pickup-options');
+    if (!box) return;
+    box.innerHTML = PICKUP_POINTS.map((p, i) => `
+        <label style="font-size: 1.4rem; display: flex; align-items: center; gap: 0.8rem; cursor: pointer; padding: 0.8rem 1rem; border: 2px solid #ddd; border-radius: 0.8rem;">
+            <input type="radio" name="pickup-point" value="${p.replace(/"/g, '&quot;')}" ${i === 0 ? 'checked' : ''} style="transform: scale(1.2);"> ${p.replace(/</g, '&lt;')}
+        </label>`).join('');
+})();
+
+// Diantar -> tampilkan form WhatsApp | Dijemput -> tampilkan pilihan titik jemput
+function updateDeliveryUI() {
+    const diantar = getMethod() === 'Diantar';
+    const wa = document.getElementById('delivery-wa-box'), pk = document.getElementById('delivery-pickup-box');
+    if (wa) wa.style.display = diantar ? 'block' : 'none';
+    if (pk) pk.style.display = diantar ? 'none' : 'block';
+}
+updateDeliveryUI();
+
 // Elemen Modal Paket & Keranjang
 const packageModal = document.getElementById('package-modal');
 const cartModal = document.getElementById('cart-modal');
@@ -161,36 +181,85 @@ if (closePackageBtn) {
     });
 }
 
-// 2. Tombol Konfirmasi "Masukkan ke Keranjang" di modal paket
+// 2. ALUR PILIH: Paket -> Cocolan -> Topping -> masuk keranjang
+const COCOL_OPTIONS = ['Coklat', 'Strawberry', 'Matcha', 'Tanpa Cocolan'];
+const TOPPING_OPTIONS = ['Crunch Biskuit', 'Crunch Oreo', 'Tanpa Topping'];
+let pick = { pkg: null, price: 0, cocol: null };
+
+// Bikin window pilihan dengan gaya yang sama seperti window pilih paket
+function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
+    const m = document.createElement('div');
+    m.className = 'cart-modal';
+    m.id = id;
+    const lbl = 'display: flex; align-items: center; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;';
+    m.innerHTML = `
+        <div class="cart-content">
+            <h2>${title}</h2>
+            <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1.2rem;">
+                ${options.map((o, i) => `
+                <label style="${lbl}">
+                    <input type="radio" name="${group}" value="${o}" ${i === options.length - 1 ? 'checked' : ''} style="transform: scale(1.2);">
+                    <strong style="font-size: 1.6rem; margin-left: 1.5rem; flex: 1; text-align: left; color: #333;">${o}</strong>
+                </label>`).join('')}
+            </div>
+            <button class="btn" id="${id}-next" style="width: 100%; margin-bottom: 5px;">${nextLabel}</button>
+            <button class="btn" id="${id}-back" style="background: #555; width: 100%;">${backLabel}</button>
+        </div>`;
+    document.body.appendChild(m);
+    return m;
+}
+const cocolModal = buildOptionModal('cocol-modal', 'Pilih Cocolan', 'cocol-option', COCOL_OPTIONS, 'Lanjut: Pilih Topping', 'Kembali');
+const toppingModal = buildOptionModal('topping-modal', 'Pilih Topping', 'topping-option', TOPPING_OPTIONS, 'Masukkan ke Keranjang', 'Kembali');
+const checkedValue = (name) => { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? r.value : null; };
+
+// Paket -> Cocolan
 const confirmAddBtn = document.getElementById('confirm-add-btn');
 if (confirmAddBtn) {
     confirmAddBtn.addEventListener('click', () => {
         const selectedRadio = document.querySelector('input[name="package-option"]:checked');
         if (!selectedRadio || !selectedBaseProduct) return;
-
-        const packageName = selectedRadio.value; // Basic / Jumbo / Family
-        const packagePrice = parseInt(selectedRadio.getAttribute('data-price'));
-        
-        // Buat nama item gabungan, contoh: "Mochi Coklat (Jumbo)"
-        const fullItemName = `${selectedBaseProduct.name} (${packageName})`;
-
-        // Cek apakah item dengan rasa & paket yang sama sudah ada di keranjang
-        const existingItem = cart.find(item => item.name === fullItemName);
-        if (existingItem) {
-            existingItem.qty += 1;
-        } else {
-            cart.push({
-                name: fullItemName,
-                price: packagePrice,
-                qty: 1
-            });
-        }
-
-        saveCart();
+        pick.pkg = selectedRadio.value;
+        pick.price = parseInt(selectedRadio.getAttribute('data-price'));
         packageModal.classList.remove('active');
-        alert(`${fullItemName} berhasil ditambahkan ke keranjang!`);
+        cocolModal.classList.add('active');
     });
 }
+
+// Cocolan -> Topping (atau kembali ke Paket)
+document.getElementById('cocol-modal-back').addEventListener('click', () => {
+    cocolModal.classList.remove('active');
+    packageModal.classList.add('active');
+});
+document.getElementById('cocol-modal-next').addEventListener('click', () => {
+    pick.cocol = checkedValue('cocol-option');
+    cocolModal.classList.remove('active');
+    toppingModal.classList.add('active');
+});
+
+// Topping -> masuk keranjang (atau kembali ke Cocolan)
+document.getElementById('topping-modal-back').addEventListener('click', () => {
+    toppingModal.classList.remove('active');
+    cocolModal.classList.add('active');
+});
+document.getElementById('topping-modal-next').addEventListener('click', () => {
+    const topping = checkedValue('topping-option');
+    // Contoh nama: "Mochi Coklat (Jumbo) + Cocol Matcha + Crunch Oreo"
+    const parts = [`${selectedBaseProduct.name} (${pick.pkg})`];
+    if (pick.cocol && pick.cocol !== 'Tanpa Cocolan') parts.push('Cocol ' + pick.cocol);
+    if (topping && topping !== 'Tanpa Topping') parts.push(topping);
+    const fullItemName = parts.join(' + ');
+
+    const existingItem = cart.find(item => item.name === fullItemName);
+    if (existingItem) {
+        existingItem.qty += 1;
+    } else {
+        cart.push({ name: fullItemName, price: pick.price, qty: 1 });
+    }
+
+    saveCart();
+    toppingModal.classList.remove('active');
+    alert(`${fullItemName} berhasil ditambahkan ke keranjang!`);
+});
 
 // 3. Render isi keranjang ke dalam modal utama
 function renderCartItems() {
@@ -238,7 +307,7 @@ function renderCartItems() {
 }
 
 // Ganti metode Diantar / Dijemput -> total ikut berubah
-document.querySelectorAll('input[name="delivery-method"]').forEach(r => r.addEventListener('change', renderCartItems));
+document.querySelectorAll('input[name="delivery-method"]').forEach(r => r.addEventListener('change', () => { updateDeliveryUI(); renderCartItems(); }));
 
 // Fungsi ubah jumlah item (+ / -) di modal keranjang
 window.changeQty = function(index, amount) {
@@ -492,6 +561,7 @@ function renderDetail(o) {
     res.innerHTML = `
         <p><strong>No. Pesanan: ${esc(o.orderNo)}</strong></p>
         <p>Nama: ${esc(o.name)} | ${esc(o.method)}</p>
+        ${o.phone ? `<p>WhatsApp: ${esc(o.phone)}</p>` : ''}${o.pickupPoint ? `<p>Titik jemput: <strong>${esc(o.pickupPoint)}</strong></p>` : ''}
         <ul style="margin:0.8rem 0 0.8rem 2rem;">${items}</ul>
         ${o.shipping ? `<p>Subtotal: ${rp(o.subtotal)} | Ongkir: ${rp(o.shipping)}</p>` : ''}
         <p>Total: <strong>${rp(o.total)}</strong></p>
@@ -574,6 +644,18 @@ if (checkoutBtn) {
         if (cart.length === 0) { alert('Keranjang kamu masih kosong!'); return; }
 
         const method = getMethod();
+
+        // Diantar -> wajib nomor WhatsApp | Dijemput -> wajib pilih titik jemput
+        let phone = null, pickupPoint = null;
+        if (method === 'Diantar') {
+            const waInput = $('buyer-wa');
+            const raw = (waInput ? waInput.value : '').replace(/[\s-]/g, '');
+            if (!/^(\+62|62|0)8\d{7,12}$/.test(raw)) { alert('Isi nomor WhatsApp yang aktif ya (contoh: 0812xxxxxxxx).'); if (waInput) waInput.focus(); return; }
+            phone = raw;
+        } else {
+            pickupPoint = checkedValue('pickup-point');
+            if (!pickupPoint) { alert('Pilih titik jemput dulu ya.'); return; }
+        }
         const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
         const shipping = getShipping();
         const total = subtotal + shipping;
@@ -587,7 +669,7 @@ if (checkoutBtn) {
                 try {
                     await set(ref(db, 'orders/' + no), {
                         orderNo: no, uid: user.uid, email: user.email,
-                        name: buyerName.slice(0, 60), method,
+                        name: buyerName.slice(0, 60), method, ...(phone ? { phone } : { pickupPoint }),
                         items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
                         subtotal, shipping, total, status: 'Menunggu Pembayaran',
                         createdAt: Date.now(), updatedAt: Date.now()
