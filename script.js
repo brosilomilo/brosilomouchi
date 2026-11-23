@@ -262,6 +262,8 @@ document.getElementById('topping-modal-next').addEventListener('click', () => {
 });
 
 // 3. Render isi keranjang ke dalam modal utama
+// Tombol - dan + dibuat persegi, ukurannya sama (kiri = kurang, kanan = tambah)
+const QTY_BTN = 'width: 3.2rem; min-width: 3.2rem; height: 3.2rem; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; line-height: 1; font-weight: bold; color: #333; background: #fff; border: 1px solid #ccc; border-radius: 0.6rem; cursor: pointer;';
 function renderCartItems() {
     const container = document.getElementById('cart-items-container');
     const totalPriceElement = document.getElementById('cart-total-price');
@@ -284,15 +286,15 @@ function renderCartItems() {
         let subtotal = item.price * item.qty;
         totalHarga += subtotal;
         html += `
-            <div class="cart-item-row">
-                <div>
+            <div class="cart-item-row" style="gap: 1rem;">
+                <div style="flex: 1; min-width: 0; text-align: left; word-break: break-word;">
                     <strong>${item.name}</strong><br>
                     <small>Rp ${item.price.toLocaleString('id-ID')} x ${item.qty}</small>
                 </div>
-                <div>
-                    <button onclick="changeQty(${index}, 1)" style="padding: 2px 8px; cursor: pointer;">+</button>
-                    <span style="margin: 0 8px;">${item.qty}</span>
-                    <button onclick="changeQty(${index}, -1)" style="padding: 2px 8px; cursor: pointer;">-</button>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-shrink: 0;">
+                    <button onclick="changeQty(${index}, -1)" style="${QTY_BTN}">&minus;</button>
+                    <span style="min-width: 2.4rem; text-align: center; font-weight: bold;">${item.qty}</span>
+                    <button onclick="changeQty(${index}, 1)" style="${QTY_BTN}">+</button>
                 </div>
             </div>
         `;
