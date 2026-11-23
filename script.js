@@ -93,7 +93,7 @@ onValue(statusRef, (snapshot) => {
 
 /// SISTEM KERANJANG BELANJA & PILIHAN PAKET
 
-let cart = JSON.parse(localStorage.getItem('brosilo_cart')) || [];
+let cart = JSON.parse(localStorage.getItem('brosilo_cart_v2')) || [];
 let selectedBaseProduct = null;
 
 // ONGKIR: biaya antar (ubah angkanya di sini)
@@ -145,7 +145,7 @@ function updateCartCount() {
 
 // Simpan data keranjang ke localStorage
 function saveCart() {
-    localStorage.setItem('brosilo_cart', JSON.stringify(cart));
+    localStorage.setItem('brosilo_cart_v2', JSON.stringify(cart));
     updateCartCount();
     renderCartItems();
 }
@@ -427,7 +427,13 @@ const setAuthMode = (m) => {
 };
 const openAuthModal = (m = 'login') => { setAuthMode(m); authModal.classList.add('active'); };
 const closeAuthModal = () => authModal.classList.remove('active');
-const login = () => openAuthModal();
+let returnToOrders = false;   // true kalau login dipencet dari window "Pesanan Saya"
+const login = (fromOrders = false) => {
+    returnToOrders = fromOrders === true;
+    // tutup window "Pesanan Saya" biar window Masuk/Daftar tidak ketimpa di belakangnya
+    orderModal.classList.remove('active');
+    openAuthModal();
+};
 
 const authError = (e) => ({
     'auth/email-already-in-use': 'Email ini sudah terdaftar. Coba Masuk.',
@@ -478,7 +484,7 @@ $('auth-reset').onclick = async (e) => {
         msg.innerText = 'Link reset password dikirim ke emailmu (cek juga folder spam).';
     } catch (err) { msg.innerText = authError(err); }
 };
-$('close-auth-btn').onclick = closeAuthModal;
+$('close-auth-btn').onclick = () => { returnToOrders = false; closeAuthModal(); };
 
 // ---------- MODAL "PESANAN SAYA" ----------
 const orderModal = document.createElement('div');
@@ -519,7 +525,10 @@ let myOrders = {}, selected = null, unsubOrders = null;
 
 onAuthStateChanged(auth, (u) => {
     user = u;
-    if (u) closeAuthModal();
+    if (u) {
+        closeAuthModal();
+        if (returnToOrders) { returnToOrders = false; openOrderModal(); }   // balik ke Pesanan Saya setelah login
+    }
     authLink.innerText = u ? 'Keluar' : 'Login';
     const nameInput = $('buyer-name');
     if (u && nameInput && !nameInput.value) nameInput.value = u.displayName || '';
@@ -542,7 +551,7 @@ function render() {
     if (!user) {
         box.innerHTML = '<p>Login dulu untuk melihat pesananmu.</p><button class="btn" id="login-btn" style="margin-top:1rem;">Masuk / Daftar</button>';
         res.innerHTML = '';
-        $('login-btn').onclick = login;
+        $('login-btn').onclick = () => login(true);
         return;
     }
     const list = Object.values(myOrders).sort((a, b) => b.createdAt - a.createdAt);
