@@ -817,3 +817,20 @@ section {
         background: #ce8150;
     }
 }
+
+/* Ikon keranjang & pesanan di deretan social icons (bagian depan) */
+.social-icons a {
+    position: relative;
+}
+.social-icons #cart-count {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: #d70032;
+    color: white;
+    font-size: 1rem;
+    line-height: 1.2;
+    padding: 0.2rem 0.6rem;
+    border-radius: 50%;
+    font-weight: bold;
+}
