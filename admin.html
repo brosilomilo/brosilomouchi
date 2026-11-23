@@ -174,6 +174,8 @@
             }
         }
 
+        const waLink = (p) => 'https://wa.me/' + String(p || '').replace(/\D/g, '').replace(/^0/, '62');
+
         function render() {
             const list = orders.filter(o => filter === 'semua' ? true : filter === 'selesai' ? FINAL.includes(o.status) : !FINAL.includes(o.status));
             const box = $('orders-list');
@@ -194,6 +196,8 @@
                         <span class="pill s-${esc(o.status.replace(/ /g, ''))}">${esc(label)}</span>
                     </div>
                     <div><strong>${esc(o.name)}</strong> | ${esc(o.method)}${o.email ? ' | <small>' + esc(o.email) + '</small>' : ''}</div>
+                    ${o.phone ? `<div style="margin-top:4px;">📱 <a href="${waLink(o.phone)}" target="_blank" rel="noopener">${esc(o.phone)}</a></div>` : ''}
+                    ${o.pickupPoint ? `<div style="margin-top:4px;">📍 Jemput: <strong>${esc(o.pickupPoint)}</strong></div>` : ''}
                     <ul>${items}</ul>
                     <div><strong>Total: ${rp(o.total)}</strong>${o.shipping ? ' <small>(termasuk ongkir ' + rp(o.shipping) + ')</small>' : ''} <small>• ${esc(time)}</small></div>
                     ${pay}
@@ -252,6 +256,8 @@
                             <div>Tgl: ${new Date(o.createdAt).toLocaleString('id-ID')}</div>
                             <div>Pemesan: ${esc(o.name)}</div>
                             <div>Metode: ${esc(o.method)}</div>
+                            ${o.phone ? `<div>WA: ${esc(o.phone)}</div>` : ''}
+                            ${o.pickupPoint ? `<div>Jemput: ${esc(o.pickupPoint)}</div>` : ''}
                         </div>
                         <div class="line"></div>
                         <div>${itemsHtml}</div>
