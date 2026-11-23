@@ -182,9 +182,20 @@ if (closePackageBtn) {
 }
 
 // 2. ALUR PILIH: Paket -> Cocolan -> Topping -> masuk keranjang
-const COCOL_OPTIONS = ['Coklat', 'Strawberry', 'Matcha', 'Tanpa Cocolan'];
-const TOPPING_OPTIONS = ['Crunch Biskuit', 'Crunch Oreo', 'Tanpa Topping'];
-let pick = { pkg: null, price: 0, cocol: null };
+// HARGA TAMBAHAN (per item): cocolan +Rp 3.000, topping +Rp 2.000. Ubah angkanya di sini.
+const COCOL_PRICE = 3000, TOPPING_PRICE = 2000;
+const COCOL_OPTIONS = [
+    { name: 'Coklat', price: COCOL_PRICE },
+    { name: 'Strawberry', price: COCOL_PRICE },
+    { name: 'Matcha', price: COCOL_PRICE },
+    { name: 'Tanpa Cocolan', price: 0 }
+];
+const TOPPING_OPTIONS = [
+    { name: 'Crunch Biskuit', price: TOPPING_PRICE },
+    { name: 'Crunch Oreo', price: TOPPING_PRICE },
+    { name: 'Tanpa Topping', price: 0 }
+];
+let pick = { pkg: null, price: 0, cocol: null, cocolPrice: 0 };
 
 // Bikin window pilihan dengan gaya yang sama seperti window pilih paket
 function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
@@ -198,8 +209,9 @@ function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
             <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1.2rem;">
                 ${options.map((o, i) => `
                 <label style="${lbl}">
-                    <input type="radio" name="${group}" value="${o}" ${i === options.length - 1 ? 'checked' : ''} style="transform: scale(1.2);">
-                    <strong style="font-size: 1.6rem; margin-left: 1.5rem; flex: 1; text-align: left; color: #333;">${o}</strong>
+                    <input type="radio" name="${group}" value="${o.name}" data-price="${o.price}" ${i === options.length - 1 ? 'checked' : ''} style="transform: scale(1.2);">
+                    <strong style="font-size: 1.6rem; margin-left: 1.5rem; flex: 1; text-align: left; color: #333;">${o.name}</strong>
+                    <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">${o.price ? '+Rp ' + o.price.toLocaleString('id-ID') : ''}</span>
                 </label>`).join('')}
             </div>
             <button class="btn" id="${id}-next" style="width: 100%; margin-bottom: 5px;">${nextLabel}</button>
@@ -211,6 +223,7 @@ function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
 const cocolModal = buildOptionModal('cocol-modal', 'Pilih Cocolan', 'cocol-option', COCOL_OPTIONS, 'Lanjut: Pilih Topping', 'Kembali');
 const toppingModal = buildOptionModal('topping-modal', 'Pilih Topping', 'topping-option', TOPPING_OPTIONS, 'Masukkan ke Keranjang', 'Kembali');
 const checkedValue = (name) => { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? r.value : null; };
+const checkedPrice = (name) => { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? (parseInt(r.getAttribute('data-price')) || 0) : 0; };
 
 // Paket -> Cocolan
 const confirmAddBtn = document.getElementById('confirm-add-btn');
@@ -232,6 +245,7 @@ document.getElementById('cocol-modal-back').addEventListener('click', () => {
 });
 document.getElementById('cocol-modal-next').addEventListener('click', () => {
     pick.cocol = checkedValue('cocol-option');
+    pick.cocolPrice = checkedPrice('cocol-option');
     cocolModal.classList.remove('active');
     toppingModal.classList.add('active');
 });
@@ -243,6 +257,8 @@ document.getElementById('topping-modal-back').addEventListener('click', () => {
 });
 document.getElementById('topping-modal-next').addEventListener('click', () => {
     const topping = checkedValue('topping-option');
+    const toppingPrice = checkedPrice('topping-option');
+    const unitPrice = pick.price + pick.cocolPrice + toppingPrice;   // paket + cocolan + topping
     // Contoh nama: "Mochi Coklat (Jumbo) + Cocol Matcha + Crunch Oreo"
     const parts = [`${selectedBaseProduct.name} (${pick.pkg})`];
     if (pick.cocol && pick.cocol !== 'Tanpa Cocolan') parts.push('Cocol ' + pick.cocol);
@@ -253,7 +269,7 @@ document.getElementById('topping-modal-next').addEventListener('click', () => {
     if (existingItem) {
         existingItem.qty += 1;
     } else {
-        cart.push({ name: fullItemName, price: pick.price, qty: 1 });
+        cart.push({ name: fullItemName, price: unitPrice, qty: 1 });
     }
 
     saveCart();
