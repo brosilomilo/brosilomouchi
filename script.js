@@ -102,7 +102,7 @@ const getMethod = () => { const r = document.querySelector('input[name="delivery
 const getShipping = () => (getMethod() === 'Diantar' ? SHIPPING_FEE : 0);
 
 // TITIK JEMPUT (3 opsi) - GANTI nama lokasinya sesuai keinginan
-const PICKUP_POINTS = ['Barak (Samping Kolam)', 'Ruang Dosen (Gedung-E Lantai 2', 'Kelas (Khusus Mi 1A'];
+const PICKUP_POINTS = ['Barak | Samping Kolam', 'Ruang Dosen | Gedung-E Lantai 2', 'Kelas | Khusus Mi 1A'];
 (function renderPickupOptions() {
     const box = document.getElementById('pickup-options');
     if (!box) return;
