@@ -134,6 +134,51 @@ const products = [
     { name: 'Mochi Mix | Campur' } // <-- Tambahan menu baru
 ];
 
+// ===== BAR CHECKOUT DI BAWAH (muncul setelah ada item di keranjang) =====
+// Kiri: ikon keranjang+ = tambah menu lagi (scroll ke List Menu) | Kanan: tombol Checkout = buka "Keranjang Mochi Lu"
+const cartBarStyle = document.createElement('style');
+cartBarStyle.textContent = `
+#cart-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.2rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+    transform: translateY(110%); transition: transform 0.3s ease; }
+#cart-bar.show { transform: translateY(0); }
+#cart-bar button { border: none; cursor: pointer; font-family: inherit; }
+#cart-bar-add { flex: 0 0 auto; width: 8rem; height: 5.4rem; border-radius: 3rem; background: #eeeeee; color: #00a650; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+#cart-bar-checkout { flex: 1; height: 5.4rem; border-radius: 3rem; background: #00a650; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; }
+#cart-bar-checkout strong { font-size: 1.8rem; }
+#cart-bar-checkout small { font-size: 1.2rem; opacity: 0.9; }
+#cart-bar button:active { transform: scale(0.98); }
+body.has-cart-bar { padding-bottom: 8.5rem; }
+@media (min-width: 700px) {
+    #cart-bar { left: 50%; right: auto; width: 560px; border-radius: 2rem 2rem 0 0; transform: translate(-50%, 110%); }
+    #cart-bar.show { transform: translate(-50%, 0); }
+}`;
+document.head.appendChild(cartBarStyle);
+
+const cartBar = document.createElement('div');
+cartBar.id = 'cart-bar';
+cartBar.innerHTML = `
+    <button type="button" id="cart-bar-add" title="Tambah menu lagi" aria-label="Tambah menu lagi"><i class='bx bx-cart-add'></i></button>
+    <button type="button" id="cart-bar-checkout"><strong>Checkout</strong><small id="cart-bar-info"></small></button>`;
+document.body.appendChild(cartBar);
+
+document.getElementById('cart-bar-add').addEventListener('click', () => {
+    const menu = document.getElementById('services');
+    if (menu) menu.scrollIntoView({ behavior: 'smooth' });
+});
+document.getElementById('cart-bar-checkout').addEventListener('click', () => {
+    cartModal.classList.add('active');
+    renderCartItems();
+});
+
+function updateCartBar() {
+    const items = cart.reduce((sum, i) => sum + i.qty, 0);
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    document.getElementById('cart-bar-info').innerText = items + ' item \u00B7 Rp ' + subtotal.toLocaleString('id-ID');
+    cartBar.classList.toggle('show', items > 0);
+    document.body.classList.toggle('has-cart-bar', items > 0);
+}
+
 // Update badge angka di ikon keranjang navbar
 function updateCartCount() {
     const cartCount = document.getElementById('cart-count');
@@ -141,6 +186,7 @@ function updateCartCount() {
         const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
         cartCount.innerText = totalItems;
     }
+    updateCartBar();
 }
 
 // Simpan data keranjang ke localStorage
@@ -733,3 +779,4 @@ if (checkoutBtn) {
 }
 
 updateCartCount();
+              
