@@ -135,7 +135,7 @@ const products = [
 ];
 
 // ===== BAR CHECKOUT DI BAWAH (muncul setelah ada item di keranjang) =====
-// Kiri: ikon keranjang+ = tambah menu lagi (scroll ke List Menu) | Kanan: tombol Checkout = buka "Keranjang Mochi Lu"
+// Hanya tombol Checkout -> buka "Keranjang Mochi Lu". Warna: background kuning (#ffb300), tulisan merah (#d70032)
 const cartBarStyle = document.createElement('style');
 cartBarStyle.textContent = `
 #cart-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; display: flex; align-items: center; gap: 1rem;
@@ -143,10 +143,9 @@ cartBarStyle.textContent = `
     transform: translateY(110%); transition: transform 0.3s ease; }
 #cart-bar.show { transform: translateY(0); }
 #cart-bar button { border: none; cursor: pointer; font-family: inherit; }
-#cart-bar-add { flex: 0 0 auto; width: 8rem; height: 5.4rem; border-radius: 3rem; background: #eeeeee; color: #00a650; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
-#cart-bar-checkout { flex: 1; height: 5.4rem; border-radius: 3rem; background: #00a650; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; }
+#cart-bar-checkout { flex: 1; height: 5.4rem; border-radius: 3rem; background: #ffb300; color: #d70032; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; }
 #cart-bar-checkout strong { font-size: 1.8rem; }
-#cart-bar-checkout small { font-size: 1.2rem; opacity: 0.9; }
+#cart-bar-checkout small { font-size: 1.2rem; font-weight: bold; }
 #cart-bar button:active { transform: scale(0.98); }
 body.has-cart-bar { padding-bottom: 8.5rem; }
 @media (min-width: 700px) {
@@ -158,14 +157,9 @@ document.head.appendChild(cartBarStyle);
 const cartBar = document.createElement('div');
 cartBar.id = 'cart-bar';
 cartBar.innerHTML = `
-    <button type="button" id="cart-bar-add" title="Tambah menu lagi" aria-label="Tambah menu lagi"><i class='bx bx-cart-add'></i></button>
     <button type="button" id="cart-bar-checkout"><strong>Checkout</strong><small id="cart-bar-info"></small></button>`;
 document.body.appendChild(cartBar);
 
-document.getElementById('cart-bar-add').addEventListener('click', () => {
-    const menu = document.getElementById('services');
-    if (menu) menu.scrollIntoView({ behavior: 'smooth' });
-});
 document.getElementById('cart-bar-checkout').addEventListener('click', () => {
     cartModal.classList.add('active');
     renderCartItems();
@@ -779,4 +773,3 @@ if (checkoutBtn) {
 }
 
 updateCartCount();
-              
