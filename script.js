@@ -221,21 +221,21 @@ if (closePackageBtn) {
     });
 }
 
-// 2. ALUR PILIH: Paket -> Cocolan -> Topping -> masuk keranjang
-// HARGA TAMBAHAN (per item): cocolan +Rp 3.000, topping +Rp 2.000. Ubah angkanya di sini.
-const COCOL_PRICE = 3000, TOPPING_PRICE = 2000;
-const COCOL_OPTIONS = [
-    { name: 'Coklat', price: COCOL_PRICE },
-    { name: 'Strawberry', price: COCOL_PRICE },
-    { name: 'Matcha', price: COCOL_PRICE },
-    { name: 'Tanpa Cocolan', price: 0 }
+// 2. ALUR PILIH: Paket -> Ukuran Cocolan (+ rasa) -> Topping -> masuk keranjang
+// HARGA TAMBAHAN (per item). Ubah angkanya di sini.
+const TOPPING_PRICE = 1000;
+const COCOL_SIZES = [
+    { name: 'Cocolan Normal', price: 0 },
+    { name: 'Extra Cocolan', price: 2000 },
+    { name: 'Cocolan Kolam', price: 4000 }
 ];
+const COCOL_FLAVORS = ['Coklat', 'Strawberry', 'Matcha'];
 const TOPPING_OPTIONS = [
     { name: 'Crunch Biskuit', price: TOPPING_PRICE },
     { name: 'Crunch Oreo', price: TOPPING_PRICE },
     { name: 'Tanpa Topping', price: 0 }
 ];
-let pick = { pkg: null, price: 0, cocol: null, cocolPrice: 0 };
+let pick = { pkg: null, price: 0, cocolSize: null, cocolFlavor: null, cocolPrice: 0 };
 
 // Bikin window pilihan dengan gaya yang sama seperti window pilih paket
 function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
@@ -260,7 +260,48 @@ function buildOptionModal(id, title, group, options, nextLabel, backLabel) {
     document.body.appendChild(m);
     return m;
 }
-const cocolModal = buildOptionModal('cocol-modal', 'Pilih Cocolan', 'cocol-option', COCOL_OPTIONS, 'Lanjut: Pilih Topping', 'Kembali');
+
+// Window "Pilih Ukuran Cocolan": tiap ukuran punya sub pilihan rasa yang muncul saat ukuran itu diklik
+function buildCocolModal() {
+    const m = document.createElement('div');
+    m.className = 'cart-modal';
+    m.id = 'cocol-modal';
+    const lbl = 'display: flex; align-items: center; background: #fdfdfd; padding: 1.2rem 1.5rem; border-radius: 1.2rem; cursor: pointer; border: 2px solid #ddd;';
+    const subLbl = 'display: flex; align-items: center; gap: 0.8rem; font-size: 1.4rem; color: #333; cursor: pointer; padding: 0.5rem 0;';
+    m.innerHTML = `
+        <div class="cart-content">
+            <h2>Pilih Ukuran Cocolan</h2>
+            <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1.2rem;">
+                ${COCOL_SIZES.map((o, i) => `
+                <div>
+                    <label style="${lbl}">
+                        <input type="radio" name="cocol-size" value="${o.name}" data-price="${o.price}" data-idx="${i}" ${i === 0 ? 'checked' : ''} style="transform: scale(1.2);">
+                        <strong style="font-size: 1.6rem; margin-left: 1.5rem; flex: 1; text-align: left; color: #333;">${o.name}</strong>
+                        <span style="font-weight: bold; font-size: 1.5rem; color: var(--main-color);">${o.price ? '+Rp ' + o.price.toLocaleString('id-ID') : 'Gratis'}</span>
+                    </label>
+                    <div class="cocol-sub" data-idx="${i}" style="display: ${i === 0 ? 'flex' : 'none'}; flex-direction: column; margin: 0.6rem 0 0 2.4rem; padding-left: 1.2rem; border-left: 3px solid #ddd; text-align: left;">
+                        ${COCOL_FLAVORS.map((f, j) => `
+                        <label style="${subLbl}">
+                            <input type="radio" name="cocol-flavor-${i}" value="${f}" ${j === 0 ? 'checked' : ''}> ${f}
+                        </label>`).join('')}
+                    </div>
+                </div>`).join('')}
+            </div>
+            <button class="btn" id="cocol-modal-next" style="width: 100%; margin-bottom: 5px;">Lanjut: Pilih Topping</button>
+            <button class="btn" id="cocol-modal-back" style="background: #555; width: 100%;">Kembali</button>
+        </div>`;
+    document.body.appendChild(m);
+    // Tampilkan sub pilihan rasa hanya untuk ukuran yang sedang dipilih
+    m.querySelectorAll('input[name="cocol-size"]').forEach(r => {
+        r.addEventListener('change', () => {
+            m.querySelectorAll('.cocol-sub').forEach(sub => {
+                sub.style.display = sub.getAttribute('data-idx') === r.getAttribute('data-idx') ? 'flex' : 'none';
+            });
+        });
+    });
+    return m;
+}
+const cocolModal = buildCocolModal();
 const toppingModal = buildOptionModal('topping-modal', 'Pilih Topping', 'topping-option', TOPPING_OPTIONS, 'Masukkan ke Keranjang', 'Kembali');
 const checkedValue = (name) => { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? r.value : null; };
 const checkedPrice = (name) => { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? (parseInt(r.getAttribute('data-price')) || 0) : 0; };
@@ -284,8 +325,11 @@ document.getElementById('cocol-modal-back').addEventListener('click', () => {
     packageModal.classList.add('active');
 });
 document.getElementById('cocol-modal-next').addEventListener('click', () => {
-    pick.cocol = checkedValue('cocol-option');
-    pick.cocolPrice = checkedPrice('cocol-option');
+    const sizeRadio = document.querySelector('input[name="cocol-size"]:checked');
+    const idx = sizeRadio.getAttribute('data-idx');
+    pick.cocolSize = sizeRadio.value;
+    pick.cocolPrice = parseInt(sizeRadio.getAttribute('data-price')) || 0;
+    pick.cocolFlavor = checkedValue('cocol-flavor-' + idx);
     cocolModal.classList.remove('active');
     toppingModal.classList.add('active');
 });
@@ -299,9 +343,9 @@ document.getElementById('topping-modal-next').addEventListener('click', () => {
     const topping = checkedValue('topping-option');
     const toppingPrice = checkedPrice('topping-option');
     const unitPrice = pick.price + pick.cocolPrice + toppingPrice;   // paket + cocolan + topping
-    // Contoh nama: "Mochi Coklat (Jumbo) + Cocol Matcha + Crunch Oreo"
+    // Contoh nama: "Mochi Coklat (Jumbo) + Extra Cocolan Matcha + Crunch Oreo"
     const parts = [`${selectedBaseProduct.name} (${pick.pkg})`];
-    if (pick.cocol && pick.cocol !== 'Tanpa Cocolan') parts.push('Cocol ' + pick.cocol);
+    if (pick.cocolSize) parts.push(`${pick.cocolSize} ${pick.cocolFlavor}`);
     if (topping && topping !== 'Tanpa Topping') parts.push(topping);
     const fullItemName = parts.join(' + ');
 
