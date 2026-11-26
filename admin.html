@@ -41,6 +41,10 @@
         .order small { color: #888; }
         .order .btn { margin: 10px 0 0; padding: 11px; font-size: 15px; }
         .empty { color: #888; padding: 20px; }
+        .fb-item { text-align: left; border: 2px solid #eee; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
+        .fb-msg { white-space: pre-wrap; word-break: break-word; font-size: 15px; color: #333; margin-bottom: 8px; }
+        .fb-item .btn { margin: 8px 0 0; padding: 10px; font-size: 14px; }
+        .badge-n { display: inline-block; min-width: 24px; padding: 2px 8px; border-radius: 12px; background: #d70032; color: #fff; font-size: 13px; vertical-align: middle; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -75,6 +79,10 @@
         </div>
         <button class="btn btn-del" id="btn-clear" style="display: none; margin-bottom: 15px;">Hapus Semua Pesanan Selesai</button>
         <div id="orders-list"><div class="empty">Memuat pesanan...</div></div>
+
+        <h2>Saran &amp; Kritik <span class="badge-n" id="fb-total">0</span></h2>
+        <button class="btn btn-del" id="btn-fb-clear" style="display: none; margin-bottom: 15px;">Hapus Semua Saran</button>
+        <div id="feedback-list"><div class="empty">Memuat saran...</div></div>
     </div>
 
     <script type="module">
@@ -209,6 +217,35 @@
             }).join('');
         }
 
+        // ---------- SARAN & KRITIK (ANONIM) ----------
+        let feedbacks = [];
+
+        function renderFeedback() {
+            $('fb-total').innerText = feedbacks.length;
+            $('btn-fb-clear').style.display = feedbacks.length ? 'block' : 'none';
+            const box = $('feedback-list');
+            if (!feedbacks.length) { box.innerHTML = '<div class="empty">Belum ada saran atau kritik.</div>'; return; }
+            box.innerHTML = feedbacks.map(f => `
+                <div class="fb-item">
+                    <div class="fb-msg">${esc(f.message)}</div>
+                    <small style="color:#888;">${esc(new Date(f.createdAt).toLocaleString('id-ID'))}</small>
+                    <button class="btn btn-del" data-fb="${esc(f.id)}">Hapus</button>
+                </div>`).join('');
+        }
+
+        $('feedback-list').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-fb]');
+            if (!btn) return;
+            if (!confirm('Hapus saran ini secara permanen?')) return;
+            try { await remove(ref(db, 'feedback/' + btn.dataset.fb)); } catch (err) { alert('Gagal menghapus: ' + err.message); }
+        });
+
+        $('btn-fb-clear').addEventListener('click', async () => {
+            if (!feedbacks.length) return;
+            if (!confirm('Hapus SEMUA saran & kritik (' + feedbacks.length + ')?')) return;
+            try { await remove(ref(db, 'feedback')); } catch (err) { alert('Gagal menghapus: ' + err.message); }
+        });
+
         // FUNGSI CETAK FORMAT STRUK KASIR THERMAL (INSTAN & LANCAR)
         document.addEventListener('click', (e) => {
             const printBtn = e.target.closest('button[data-print]');
@@ -338,6 +375,13 @@
                     badge.innerText = "TOKO TUTUP (CLOSE)";
                     badge.style.background = "#ffebee"; badge.style.color = "#d70032";
                 }
+            }));
+            unsubs.push(onValue(ref(db, 'feedback'), (snapshot) => {
+                const v = snapshot.val() || {};
+                feedbacks = Object.entries(v).map(([id, f]) => ({ id, ...f })).sort((x, y) => (y.createdAt || 0) - (x.createdAt || 0));
+                renderFeedback();
+            }, (err) => {
+                $('feedback-list').innerHTML = '<div class="empty">Gagal memuat saran: ' + esc(err.message) + '</div>';
             }));
             unsubs.push(onValue(ref(db, 'orders'), (snapshot) => {
                 orders = Object.values(snapshot.val() || {}).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
