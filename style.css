@@ -851,7 +851,7 @@ section {
 .feedback-card {
     width: 100%;
     max-width: 60rem;
-    background: var(--main-color);
+    background: rgb(120, 168, 74);
     color: var(--bg-color);
     padding: 4rem 3.5rem;
     border-radius: 2.4rem;
@@ -936,10 +936,11 @@ section {
 
 #fb-msg {
     text-align: left;
-    font-weight: bold;
+    color: var(--text-color);
 }
 
 #fb-count {
+    color: var(--text-color);
     white-space: nowrap;
     transition: color 0.3s ease, transform 0.3s ease;
 }
@@ -959,7 +960,7 @@ section {
     padding: 1.3rem 2rem;
     font-size: 1.8rem;
     font-weight: bold;
-    color: var(--main-color);
+    color: var(--text-color);
     background: var(--bg-color);
     border-radius: 1.4rem;
     cursor: pointer;
