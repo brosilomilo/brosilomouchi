@@ -30,7 +30,7 @@ menuIcon.onclick = () => {
 ///Status Toko & Deskripsi Update Realtime dari Firebase
 ///admin
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, get, set, update, push, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Konfigurasi Firebase
@@ -817,3 +817,62 @@ if (checkoutBtn) {
 }
 
 updateCartCount();
+
+// ===== SARAN & KRITIK ANONIM =====
+// Masuk ke Firebase path "feedback" (tanpa nama/uid). Admin bisa baca & hapus lewat admin.html.
+(() => {
+    const form = document.getElementById('feedback-form');
+    if (!form) return;
+    const input = document.getElementById('fb-text');
+    const counter = document.getElementById('fb-count');
+    const msg = document.getElementById('fb-msg');
+    const sendBtn = document.getElementById('fb-send');
+    const emoji = document.getElementById('fb-emoji');
+    const MAX = 500, MIN = 3, COOLDOWN_MS = 60000;   // jeda kirim 60 detik biar nggak di-spam
+
+    const setEmoji = (e) => {
+        if (emoji.textContent === e) return;
+        emoji.textContent = e;
+        emoji.classList.remove('pop');
+        void emoji.offsetWidth;
+        emoji.classList.add('pop');
+    };
+    const say = (text) => { msg.textContent = text; };
+    const lastSent = () => { try { return Number(localStorage.getItem('fbLastSent')) || 0; } catch (e) { return 0; } };
+
+    input.addEventListener('input', () => {
+        const n = input.value.length;
+        counter.textContent = n + '/' + MAX;
+        counter.classList.toggle('warn', n >= MAX - 50);
+        setEmoji(n === 0 ? '💬' : n >= MAX - 50 ? '😅' : n > 120 ? '🔥' : '✍️');
+        if (n) say('');
+    });
+    input.addEventListener('focus', () => { if (!input.value) setEmoji('👀'); });
+    input.addEventListener('blur', () => { if (!input.value) setEmoji('💬'); });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (text.length < MIN) { say('Isi dulu minimal ' + MIN + ' huruf ya 🙏'); setEmoji('🤔'); return; }
+        const wait = COOLDOWN_MS - (Date.now() - lastSent());
+        if (wait > 0) { say('Tunggu ' + Math.ceil(wait / 1000) + ' detik lagi ya 😊'); return; }
+
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Mengirim...";
+        try {
+            await push(ref(db, 'feedback'), { message: text.slice(0, MAX), createdAt: Date.now() });
+            try { localStorage.setItem('fbLastSent', String(Date.now())); } catch (err) { /* abaikan */ }
+            input.value = '';
+            counter.textContent = '0/' + MAX;
+            counter.classList.remove('warn');
+            setEmoji('🎉');
+            say('Thanks cuy! Masukanmu udah terkirim!');
+        } catch (err) {
+            setEmoji('😢');
+            say('Gagal kirim, coba lagi nanti ya.');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = "<i class='bx bx-send'></i> Kirim";
+        }
+    });
+})();
