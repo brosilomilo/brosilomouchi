@@ -853,7 +853,7 @@ updateCartCount();
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = input.value.trim();
-        if (text.length < MIN) { say('Isi dulu minimal ' + MIN + ' huruf ya 🙏'); setEmoji('🤔'); return; }
+        if (text.length < MIN) { say('Isi dulu minimal ' + MIN + ' huruf ya cuy'); setEmoji('🤔'); return; }
         const wait = COOLDOWN_MS - (Date.now() - lastSent());
         if (wait > 0) { say('Tunggu ' + Math.ceil(wait / 1000) + ' detik lagi ya 😊'); return; }
 
